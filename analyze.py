@@ -2,7 +2,7 @@ import os
 import requests
 from datetime import datetime, timedelta
 
-def find_international_matches():
+def run_all_catch_radar():
     api_key = os.environ.get('FOOTBALL_API_KEY')
     if not api_key:
         print("❌ 에러: FOOTBALL_API_KEY가 없습니다.")
@@ -18,51 +18,50 @@ def find_international_matches():
     date_string = kst_now.strftime('%Y-%m-%d')
     
     print(f"=========================================")
-    print(f"🌍 [축구 AI 분석실] 국가대표 매치업 정밀 탐색 모드")
-    print(f"👉 검색 기준일: {date_string} (KST)")
+    print(f"📡 [축구 AI 분석실] 전 세계 모든 경기 레이더망 가동")
+    print(f"👉 검색 날짜: {date_string} (KST)")
     print(f"=========================================\n")
 
-    # 월드컵(1)과 친선전(10) 모두 탐색
-    target_leagues = ["1", "10"]
-    # API 서버의 연도 표기 오류에 대비하여 3년 치를 모두 찔러봅니다.
-    seasons_to_test = ["2024", "2025", "2026"] 
-    
+    # 리그 지정 없이 오늘 날짜의 '모든' 경기 호출
     url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
-    total_found = 0
+    querystring = {"date": date_string, "timezone": "Asia/Seoul"}
 
-    for league_id in target_leagues:
-        league_type = "월드컵" if league_id == "1" else "A매치(친선전)"
-        print(f"[{league_type}] 데이터베이스 스캔 중...")
+    try:
+        response = requests.get(url, headers=headers, params=querystring, timeout=10)
+        data = response.json()
         
-        for season in seasons_to_test:
-            querystring = {
-                "league": league_id, 
-                "season": season, 
-                "date": date_string,
-                "timezone": "Asia/Seoul" # 시차 문제 원천 차단
-            }
-
-            try:
-                response = requests.get(url, headers=headers, params=querystring, timeout=10)
-                data = response.json()
+        if 'response' in data and data['response']:
+            fixtures = data['response']
+            print(f"✅ 통신 성공! 오늘 전 세계에서 총 {len(fixtures)}개의 경기가 감지되었습니다.\n")
+            print("🎯 [국가대표(World) 및 주요 매치업 필터링 결과]")
+            
+            found_target = False
+            
+            for match in fixtures:
+                country = match['league']['country']
+                league_name = match['league']['name']
+                league_id = match['league']['id']
+                home = match['teams']['home']['name']
+                away = match['teams']['away']['name']
+                status = match['fixture']['status']['short']
                 
-                if 'response' in data and data['response']:
-                    fixtures = data['response']
-                    print(f"  ✔️ 성공! (시즌 설정: {season}년 데이터에서 발견)")
+                # API 분류상 국가대표(World)이거나, 팀 이름에 'Canada' 또는 주요 키워드가 들어간 경기만 쏙 뽑아냅니다.
+                if country == 'World' or 'Canada' in home or 'Canada' in away:
+                    print(f"👉 [진짜 리그ID: {league_id} | {country} - {league_name}] {home} vs {away} [{status}]")
+                    found_target = True
                     
-                    for match in fixtures:
-                        total_found += 1
-                        home = match['teams']['home']['name']
-                        away = match['teams']['away']['name']
-                        status = match['fixture']['status']['short']
-                        print(f"     👉 {home} vs {away} [{status}]")
-                        
-            except Exception as e:
-                pass # 에러가 나도 멈추지 않고 계속 탐색
+            if not found_target:
+                print("😭 캐나다 경기나 World 카테고리를 찾지 못했습니다.")
+                print("💡 (참고) 오늘 감지된 전체 리그 목록 중 일부:")
+                leagues = list(set([f"{m['league']['country']} - {m['league']['name']} (ID: {m['league']['id']})" for m in fixtures]))
+                for l in leagues[:10]:
+                    print(f"  - {l}")
+                    
+        else:
+            print("❌ API 서버가 오늘 날짜의 전체 경기 데이터를 주지 않고 있습니다.")
 
-    if total_found == 0:
-        print("\n😭 API 서버에 오늘(KST 기준) 등록된 국가대표 일정이 존재하지 않습니다.")
-        print("💡 API-Football이 해당 A매치를 다른 리그 ID(예: 지역 컵대회 예선 등)로 분류했을 가능성이 높습니다.")
+    except Exception as e:
+        print(f"에러 발생: {e}")
 
 if __name__ == "__main__":
-    find_international_matches()
+    run_all_catch_radar()
