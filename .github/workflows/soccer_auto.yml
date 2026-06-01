@@ -23,6 +23,6 @@ jobs:
 
       - name: Run Soccer AI Engine
         env:
-          FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+          FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}  # <--- 이 부분이 핵심! (파이썬에게 열쇠 전달)
         run: |
           python analyze.py
