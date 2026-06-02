@@ -4,97 +4,107 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AI 축구 승부 예측 리포트</title>
+        <title>라이브 AI 축구 분석</title>
         <style>
-            body { font-family: 'Arial', sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
+            body { font-family: 'Arial', sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; }
             h1 { text-align: center; color: #00E676; }
-            .date { text-align: center; color: #aaaaaa; margin-bottom: 30px; }
             .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
-            .card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; width: 350px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-            .league { font-size: 0.8em; color: #ff9800; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
-            .match { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; letter-spacing: -0.5px; }
-            .stat-box { background: #2a2a2a; padding: 12px; border-radius: 8px; font-size: 0.9em; margin-bottom: 15px; color: #ccc; line-height: 1.5; }
-            .stat-team { color: #fff; font-weight: bold; }
-            .result { font-size: 1em; font-weight: bold; color: #00E676; border-top: 1px dashed #444; padding-top: 15px; text-align: center; line-height: 1.6; }
-            .no-match { text-align: center; color: #ff5252; font-size: 1.2em; width: 100%; }
+            .card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; width: 300px; padding: 20px; cursor: pointer; transition: 0.3s; }
+            .card:hover { border-color: #00E676; transform: scale(1.02); }
+            .league { font-size: 0.8em; color: #ff9800; font-weight: bold; margin-bottom: 10px; }
+            .match { font-size: 1.2em; font-weight: bold; text-align: center; margin-bottom: 10px; }
+            .result { font-size: 1em; font-weight: bold; color: #00E676; text-align: center; }
+            
+            /* 팝업(모달) CSS */
+            .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); }
+            .modal-content { background-color: #222; margin: 10% auto; padding: 20px; border: 1px solid #00E676; border-radius: 10px; width: 90%; max-width: 500px; color: #fff; }
+            .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+            .close:hover { color: #fff; }
+            .team-box { background: #333; padding: 10px; margin: 10px 0; border-radius: 5px; }
         </style>
     </head>
     <body>
-        <h1>🏆 AI 축구 승부 예측 리포트</h1>
-        <div class="date">업데이트: 2026-06-02 (KST)</div>
+        <h1>⚽ 글로벌 라이브 승부 예측</h1>
         <div class="container">
-    
-                <div class="card">
-                    <div class="league">A매치 친선전</div>
-                    <div class="match">Norway vs Sweden</div>
-                    <div class="stat-box">
-                        <span class="stat-team">Norway</span> : 점유율 55.0% / 유효슈팅 7.0개<br>
-                        <span class="stat-team">Sweden</span> : 점유율 45.0% / 유효슈팅 5.0개
-                    </div>
-                    <div class="result">
-                        🎯 승무패: 🟢 Norway 승리 예상<br>
-                        ⚔️ 주도권: 팽팽한 중원 싸움<br>
-                        📊 언오버: 🔥 오버 (다득점 페이스)
-                    </div>
+                <div class="card" onclick="openModal('1536927')">
+                    <div class="league">친선경기</div>
+                    <div class="match">노르웨이 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 스웨덴</div>
+                    <div class="result">🟢 노르웨이 승 (예측)</div>
+                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
                 </div>
                 
-                <div class="card">
-                    <div class="league">A매치 친선전</div>
-                    <div class="match">Türkiye vs FYR Macedonia</div>
-                    <div class="stat-box">
-                        <span class="stat-team">Türkiye</span> : 점유율 60.0% / 유효슈팅 8.0개<br>
-                        <span class="stat-team">FYR Macedonia</span> : 점유율 40.0% / 유효슈팅 2.0개
-                    </div>
-                    <div class="result">
-                        🎯 승무패: 🟢 Türkiye 승리 예상<br>
-                        ⚔️ 주도권: Türkiye 주도<br>
-                        📊 언오버: 🔥 오버 (다득점 페이스)
-                    </div>
+                <div class="card" onclick="openModal('1543821')">
+                    <div class="league">친선경기</div>
+                    <div class="match">터키어 <br><span style="font-size:0.7em;color:#888;">vs</span><br> FYR 마케도니아</div>
+                    <div class="result">🟢 터키어 승 (예측)</div>
+                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
                 </div>
                 
-                <div class="card">
-                    <div class="league">A매치 친선전</div>
-                    <div class="match">Austria vs Tunisia</div>
-                    <div class="stat-box">
-                        <span class="stat-team">Austria</span> : 점유율 59.0% / 유효슈팅 4.0개<br>
-                        <span class="stat-team">Tunisia</span> : 점유율 41.0% / 유효슈팅 2.0개
-                    </div>
-                    <div class="result">
-                        🎯 승무패: 🟢 Austria 승리 예상<br>
-                        ⚔️ 주도권: Austria 주도<br>
-                        📊 언오버: ⚖️ 언오버 팽팽
-                    </div>
+                <div class="card" onclick="openModal('1511733')">
+                    <div class="league">친선경기</div>
+                    <div class="match">오스트리아 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 튀니지</div>
+                    <div class="result">🟢 오스트리아 승 (예측)</div>
+                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
                 </div>
                 
-                <div class="card">
-                    <div class="league">A매치 친선전</div>
-                    <div class="match">Colombia vs Costa Rica</div>
-                    <div class="stat-box">
-                        <span class="stat-team">Colombia</span> : 점유율 67.0% / 유효슈팅 4.0개<br>
-                        <span class="stat-team">Costa Rica</span> : 점유율 33.0% / 유효슈팅 3.0개
-                    </div>
-                    <div class="result">
-                        🎯 승무패: 🟢 Colombia 승리 예상<br>
-                        ⚔️ 주도권: Colombia 주도<br>
-                        📊 언오버: ⚖️ 언오버 팽팽
-                    </div>
+                <div class="card" onclick="openModal('1537648')">
+                    <div class="league">친선경기</div>
+                    <div class="match">콜롬비아 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 코스타리카</div>
+                    <div class="result">🟢 콜롬비아 승 (예측)</div>
+                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
                 </div>
                 
-                <div class="card">
-                    <div class="league">A매치 친선전</div>
-                    <div class="match">Canada vs Uzbekistan</div>
-                    <div class="stat-box">
-                        <span class="stat-team">Canada</span> : 점유율 57.0% / 유효슈팅 1.0개<br>
-                        <span class="stat-team">Uzbekistan</span> : 점유율 43.0% / 유효슈팅 0.0개
-                    </div>
-                    <div class="result">
-                        🎯 승무패: 🟢 Canada 승리 예상<br>
-                        ⚔️ 주도권: 팽팽한 중원 싸움<br>
-                        📊 언오버: ❄️ 언더 (저득점 늪축구)
-                    </div>
+                <div class="card" onclick="openModal('1514472')">
+                    <div class="league">친선경기</div>
+                    <div class="match">캐나다 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 우즈베키스탄</div>
+                    <div class="result">🟢 캐나다 승 (예측)</div>
+                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
                 </div>
-                
+                </div>
+
+        <div id="matchModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 id="modal-title" style="text-align:center; color:#00bcd4;"></h2>
+                <div class="team-box">
+                    <h3 id="modal-h-team" style="color:#00E676;"></h3>
+                    <p>📊 점유율: <span id="modal-h-poss"></span>% | 유효슈팅: <span id="modal-h-shot"></span>개</p>
+                    <p style="font-size:0.8em; color:#ccc;">🏃 선발 라인업: <span id="modal-h-lineup"></span></p>
+                </div>
+                <div class="team-box">
+                    <h3 id="modal-a-team" style="color:#ff5252;"></h3>
+                    <p>📊 점유율: <span id="modal-a-poss"></span>% | 유효슈팅: <span id="modal-a-shot"></span>개</p>
+                    <p style="font-size:0.8em; color:#ccc;">🏃 선발 라인업: <span id="modal-a-lineup"></span></p>
+                </div>
+            </div>
         </div>
+
+        <script>
+            // 파이썬이 서버에서 가져온 팝업 데이터 JSON 주입!
+            const popupData = {"1536927": {"home": "\ub178\ub974\uc6e8\uc774", "away": "\uc2a4\uc6e8\ub374", "h_poss": 55.0, "a_poss": 45.0, "h_shot": 7.0, "a_shot": 5.0, "h_lineup": ["O. Nyland", "J. Ryerson", "K. Ajer", "T. Heggem", "D. M. Wolfe", "O. Bobb", "S. Berge", "F. Aursnes", "A. Nusa", "A. Sorloth", "J. S. Larsen"], "a_lineup": ["J. Widell Zetterstrom", "G. Lagerbielke", "I. Hien", "E. Smith", "H. Johansson", "L. Bergvall", "J. Karlstrom", "Y. Ayari", "D. Svensson", "G. Nilsson", "A. Elanga"]}, "1543821": {"home": "\ud130\ud0a4\uc5b4", "away": "FYR \ub9c8\ucf00\ub3c4\ub2c8\uc544", "h_poss": 60.0, "a_poss": 40.0, "h_shot": 8.0, "a_shot": 2.0, "h_lineup": ["A. Bayindir", "M. Muldur", "O. Kabak", "C. Soyuncu", "E. Elmali", "S. Ozcan", "O. Kokcu", "O. Aydin", "Y. Akgun", "C. Uzun", "D. Gul"], "a_lineup": ["S. Dimitrievski", "G. Zajkov", "D. Velkovski", "I. Fetai", "S. Despotovski", "A. Elezi", "J. Atanasov", "E. Alioski", "E. Elmas", "B. Miovski", "A. Omeragic"]}, "1511733": {"home": "\uc624\uc2a4\ud2b8\ub9ac\uc544", "away": "\ud280\ub2c8\uc9c0", "h_poss": 59.0, "a_poss": 41.0, "h_shot": 4.0, "a_shot": 2.0, "h_lineup": ["A. Schlager", "S. Posch", "P. Lienhart", "D. Alaba", "K. Laimer", "N. Seiwald", "X. Schlager", "R. Schmid", "M. Gregoritsch", "M. Sabitzer", "M. Arnautovic"], "a_lineup": ["A. Chamakh", "Y. Valery", "M. Talbi", "O. Rekik", "A. Abdi", "R. Khedira", "E. Skhiri", "A. Slimane", "H. Mejbri", "I. Gharbi", "F. Chaouat"]}, "1537648": {"home": "\ucf5c\ub86c\ube44\uc544", "away": "\ucf54\uc2a4\ud0c0\ub9ac\uce74", "h_poss": 67.0, "a_poss": 33.0, "h_shot": 4.0, "a_shot": 3.0, "h_lineup": ["C. Vargas", "S. Arias", "D. Sanchez", "W. Ditta", "J. Mojica", "R. Rios", "G. Puerta", "Andres Gomez", "J. Carrascal", "L. Diaz", "Cucho Hernandez"], "a_lineup": ["P. Sequeira", "H. Quiros", "J. Mitchell", "F. Faerron", "D. Araya", "A. Salazar", "C. Mora", "O. Galo", "A. Soto", "J. Alcocer", "M. Ugalde"]}, "1514472": {"home": "\uce90\ub098\ub2e4", "away": "\uc6b0\uc988\ubca0\ud0a4\uc2a4\ud0c4", "h_poss": 51.0, "a_poss": 49.0, "h_shot": 4.0, "a_shot": 2.0, "h_lineup": ["M. Crepeau", "A. Johnston", "M. Bombito", "D. Cornelius", "R. Laryea", "T. Buchanan", "S. Eustaquio", "I. Kone", "L. Millar", "J. David", "C. Larin"], "a_lineup": ["A. Nematov", "A. Khusanov", "A. Abdullaev", "R. Ashurmatov", "F. Sayfiev", "O. Khamrobekov", "O. Shukurov", "S. Nasrullaev", "A. Ganiev", "O. Urunov", "E. Shomurodov"]}};
+
+            function openModal(id) {
+                const data = popupData[id];
+                if(data) {
+                    document.getElementById('modal-title').innerText = data.home + " vs " + data.away;
+                    document.getElementById('modal-h-team').innerText = "🏠 " + data.home;
+                    document.getElementById('modal-h-poss').innerText = data.h_poss;
+                    document.getElementById('modal-h-shot').innerText = data.h_shot;
+                    document.getElementById('modal-h-lineup').innerText = data.h_lineup.join(', ');
+
+                    document.getElementById('modal-a-team').innerText = "✈️ " + data.away;
+                    document.getElementById('modal-a-poss').innerText = data.a_poss;
+                    document.getElementById('modal-a-shot').innerText = data.a_shot;
+                    document.getElementById('modal-a-lineup').innerText = data.a_lineup.join(', ');
+
+                    document.getElementById('matchModal').style.display = "block";
+                }
+            }
+            function closeModal() { document.getElementById('matchModal').style.display = "none"; }
+            window.onclick = function(event) {
+                if (event.target == document.getElementById('matchModal')) { closeModal(); }
+            }
+        </script>
     </body>
     </html>
     
