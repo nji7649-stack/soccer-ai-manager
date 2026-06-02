@@ -39,7 +39,7 @@ def translate_to_ko(text):
     try: return GoogleTranslator(source='en', target='ko').translate(text)
     except: return text
 
-# 💡 빈칸 방어 함수 1: 숫자가 비어있으면 0으로 안전하게 변환
+# 숫자 변환 (빈칸 방어)
 def safe_num(value):
     if value is None or str(value).strip() == '' or str(value).strip() == 'N/A': return 0
     if isinstance(value, str): 
@@ -47,7 +47,7 @@ def safe_num(value):
         except: return 0
     return float(value)
 
-# 💡 빈칸 방어 함수 2: 글자가 비어있으면 'N/A'로 깔끔하게 표시
+# 텍스트 변환 (빈칸 방어)
 def safe_text(value):
     if not value or str(value).strip() == "": return "N/A"
     return str(value)
@@ -125,7 +125,7 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                 preds = pred_data.get('predictions', {})
                 comparison = pred_data.get('comparison', {})
                 
-                # 💡 안전하게 데이터 추출 (빈칸이면 N/A)
+                # 데이터 안전 추출 (빈칸이면 N/A)
                 form_h = safe_text(comparison.get('form', {}).get('home'))
                 form_a = safe_text(comparison.get('form', {}).get('away'))
                 att_h = safe_text(comparison.get('att', {}).get('home'))
@@ -137,20 +137,25 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                 a_pct = safe_num(preds.get('percent', {}).get('away'))
                 d_pct = safe_num(preds.get('percent', {}).get('draw'))
                 
-                # 💡 모든 확률이 0이면 (데이터를 못 받아오면) 예외 처리
-                if h_pct == 0 and a_pct == 0 and d_pct == 0:
+                # 💡 버그 픽스: API가 데이터를 모를 때 50/50/0 이나 0/0/0 을 주는 현상 차단
+                is_no_data = False
+                if (h_pct == 0 and a_pct == 0) or (h_pct == 50 and a_pct == 50 and d_pct == 0):
+                    is_no_data = True
+                
+                if is_no_data:
                     pred_winner = "none"
-                    win_pick = "⚠️ 전력 데이터 부족 (예측 불가)"
-                elif h_pct > a_pct and h_pct > d_pct:
+                    win_pick = "⚠️ 전력 데이터 부족 (배팅 패스 권장)"
+                elif h_pct > a_pct + 5: # 5% 이상 차이 나야 승리 인정
                     pred_winner = "home"
-                    win_pick = f"🟢 {home_kr} 승리 유력 ({h_pct}%)"
-                elif a_pct > h_pct and a_pct > d_pct:
+                    win_pick = f"🟢 {home_kr} 승리 유력"
+                elif a_pct > h_pct + 5:
                     pred_winner = "away"
-                    win_pick = f"🔵 {away_kr} 승리 유력 ({a_pct}%)"
+                    win_pick = f"🔵 {away_kr} 승리 유력"
                 else:
                     pred_winner = "draw"
-                    win_pick = f"🟡 팽팽한 무승부 예상 ({d_pct}%)"
+                    win_pick = f"🟡 초박빙 무승부 예상"
 
+                # 적중 채점
                 if is_finished and pred_winner != "none":
                     if h_goal > a_goal: actual_winner = "home"
                     elif a_goal > h_goal: actual_winner = "away"
@@ -159,29 +164,37 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                     if actual_winner == pred_winner: win_pick += " <span style='color:#ff9800;'>(적중)</span>"
                     else: win_pick += " <span style='color:#ff9800;'>(미적중)</span>"
                         
+                # 코멘트
                 advice = preds.get('advice', '')
                 if not advice or str(advice).strip() == "":
-                    control_pick = "💡 코멘트: API 분석 코멘트가 제공되지 않는 경기입니다."
+                    control_pick = "💡 코멘트: 친선전 등 데이터 부족 매치입니다."
                 else:
                     translated_advice = translate_to_ko(advice)
                     control_pick = f"💡 코멘트: {translated_advice}"
                 
+                # 언오버
                 under_over_val = preds.get('under_over', '')
                 if under_over_val and str(under_over_val).strip() != "":
-                    uo_text = "언더" if "-" in under_over_val else "오버"
+                    uo_text = "언더 (저득점)" if "-" in under_over_val else "오버 (다득점)"
                     clean_val = under_over_val.replace('-', '').replace('+', '')
                     over_under = f"📊 기준점 {clean_val} {uo_text}"
                 else:
                     over_under = "📊 언더/오버 기준점 미제공"
+                    
+                # 💡 회색 박스 내 승률 강제 표기
+                advanced_stats_html = f"""
+                <span style="color:#aaa;">승률:</span> 홈 <b>{h_pct}%</b> | 무 <b>{d_pct}%</b> | 원정 <b>{a_pct}%</b><br>
+                <span style="color:#aaa;">최근 폼:</span> <b>{form_h}</b> vs <b>{form_a}</b><br>
+                <span style="color:#aaa;">공/수:</span> <b>{att_h} / {def_h}</b> vs <b>{att_a} / {def_a}</b>
+                """
 
                 new_html_list.append({
                     "league": top_league_display,
                     "match_display": match_display,
-                    "home_kr": home_kr, "away_kr": away_kr,
-                    "form_h": form_h, "form_a": form_a,
-                    "att_h": att_h, "att_a": att_a,
-                    "def_h": def_h, "def_a": def_a,
-                    "win_pick": win_pick, "control_pick": control_pick, "over_under": over_under
+                    "advanced_stats": advanced_stats_html,
+                    "win_pick": win_pick, 
+                    "control_pick": control_pick, 
+                    "over_under": over_under
                 })
         except Exception as e:
             pass
@@ -204,12 +217,10 @@ if st.session_state['analyzed_html_list']:
                 <div class="league-txt">{data['league']}</div>
                 <div class="match-txt">{data['match_display']}</div>
                 <div class="stat-bg">
-                    <span style="color:#aaa;">최근 폼:</span> <b>{data['form_h']}</b> vs <b>{data['form_a']}</b><br>
-                    <span style="color:#aaa;">공격력:</span> <b>{data['att_h']}</b> vs <b>{data['att_a']}</b><br>
-                    <span style="color:#aaa;">수비력:</span> <b>{data['def_h']}</b> vs <b>{data['def_a']}</b>
+                    {data['advanced_stats']}
                 </div>
                 <div class="predict-txt">
-                    {data['win_pick']}<br>
+                    🎯 {data['win_pick']}<br>
                     <span style="font-size: 14px; font-weight: normal; color: #00E676;">
                     {data['control_pick']}<br>
                     {data['over_under']}
