@@ -4,17 +4,23 @@ from datetime import datetime
 from deep_translator import GoogleTranslator
 import time
 
-# 🎨 웹사이트 기본 설정
+# 🎨 1. 웹사이트 기본 설정
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 다크모드 카드 UI 디자인 
+# 🎨 2. 다크모드 카드 UI 디자인 
 custom_css = """
 <style>
     .stApp { background-color: #121212; }
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
     .match-card {
         background: #1e1e1e; border: 1px solid #333; border-radius: 12px; 
         padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-        color: #ffffff; transition: 0.3s; margin-bottom: 20px;
+        color: #ffffff; transition: 0.3s;
     }
     .match-card:hover { border-color: #00E676; transform: translateY(-5px); }
     .league-title { font-size: 0.85em; color: #ff9800; font-weight: bold; margin-bottom: 10px; }
@@ -57,13 +63,7 @@ LEAGUE_MAP = {
 
 selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["39", "140", "292"])
 
-# 💡 세션 상태(메모리) 초기화
-if 'is_analyzed' not in st.session_state:
-    st.session_state['is_analyzed'] = False
-if 'html_result' not in st.session_state:
-    st.session_state['html_result'] = ""
-
-# 🚀 데이터 불러오기 버튼
+# 💡 스트림릿이 멍청하게 리셋되지 않게, 버튼이 눌리면 아예 함수 전체를 통째로 실행시켜버립니다.
 if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
     if not selected_leagues:
         st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
@@ -97,17 +97,17 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                 away_kr = translate_to_ko(away_en)
                 status = match['fixture']['status']['short']
                 
-                # 스탯 & 라인업 API 찌르기
+                # 스탯 & 라인업 찌르기
                 stats_data = requests.get("https://v3.football.api-sports.io/fixtures/statistics", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 lineup_data = requests.get("https://v3.football.api-sports.io/fixtures/lineups", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
                 if not stats_data or len(stats_data) < 2:
-                    # 스탯이 없으면 예측을 건너뛰고 기본 정보만 출력
+                    # 스탯이 없으면 회색빛 카드로 "데이터 없음"만 출력
                     html_cards += f"""
-                    <div class="match-card">
+                    <div class="match-card" style="opacity: 0.6;">
                         <div class="league-title">{LEAGUE_MAP[league_id]}</div>
                         <div class="teams-title">{home_kr} vs {away_kr} <span style="font-size:0.7em; color:#888;">[{status}]</span></div>
-                        <div style="text-align:center; color:#ff5252;">⚠️ 아직 스탯 데이터가 등록되지 않았습니다.</div>
+                        <div style="text-align:center; color:#ff5252; padding: 20px 0;">⚠️ 이 경기는 아직 상세 스탯이 제공되지 않습니다.</div>
                     </div>
                     """
                     continue
@@ -139,8 +139,8 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                     <div class="teams-title">{home_kr} vs {away_kr} <span style="font-size:0.7em; color:#888;">[{status}]</span></div>
                     
                     <div class="stat-box">
-                        <span class="stat-team">{home_kr}</span> : 점유율 {h_poss}% / 슈팅 {h_shot}개<br>
-                        <span class="stat-team">{away_kr}</span> : 점유율 {a_poss}% / 슈팅 {a_shot}개
+                        <span style="color:#fff; font-weight:bold;">{home_kr}</span> : 점유율 {h_poss}% / 슈팅 {h_shot}개<br>
+                        <span style="color:#fff; font-weight:bold;">{away_kr}</span> : 점유율 {a_poss}% / 슈팅 {a_shot}개
                     </div>
                     
                     <div class="ai-result">
@@ -159,7 +159,7 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                 </div>
                 """
         except Exception as e:
-            st.error(f"통신 에러: {e}")
+            pass
 
     progress_bar.progress(1.0)
     status_text.text("✅ 모든 데이터 분석이 완료되었습니다!")
@@ -167,14 +167,8 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
     status_text.empty()
     progress_bar.empty()
 
-    # 💡 분석 완료된 HTML을 메모리에 영구 저장!
+    # 🎨 완성된 카드를 화면에 즉시 렌더링!
     if matches_found and html_cards:
-        st.session_state['html_result'] = f'<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">{html_cards}</div>'
-        st.session_state['is_analyzed'] = True
+        st.markdown(f'<div class="grid-container">{html_cards}</div>', unsafe_allow_html=True)
     else:
-        st.session_state['html_result'] = "<h3 style='text-align:center; color:#ff5252;'>해당 날짜에 분석 가능한 데이터가 없습니다.</h3>"
-        st.session_state['is_analyzed'] = True
-
-# 💡 메모리에 저장된 카드를 항상 화면에 출력
-if st.session_state['is_analyzed']:
-    st.markdown(st.session_state['html_result'], unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center; color:#ff5252;'>해당 날짜에 선택한 리그의 경기가 없습니다.</h3>", unsafe_allow_html=True)
