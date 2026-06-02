@@ -1,26 +1,39 @@
-name: Soccer AI Automation
+name: Soccer AI Predictor
 
 on:
-  workflow_dispatch: # 수동 실행 버튼 활성화
   schedule:
-    - cron: '0 23 * * *' # 한국 시간 매일 아침 8시 자동 가동
+    # ⏰ 매일 한국 시간 아침 8시에 자동 실행 (UTC 기준 23시)
+    - cron: '0 23 * * *'
+  workflow_dispatch: 
 
 jobs:
-  analyze-soccer:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 로봇이 index.html 파일을 저장할 수 있도록 권한 부여
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
           pip install requests
 
       - name: Run Soccer AI Engine
+        env:
+          FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
         run: |
-          FOOTBALL_API_KEY=${{ secrets.FOOTBALL_API_KEY }} python analyze.py
+          python analyze.py
+
+      - name: Save Visual Report
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "📊 오늘자 AI 축구 시각화 리포트 업데이트" || echo "변동사항 없음"
+          git push
