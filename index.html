@@ -12,8 +12,9 @@
             .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
             .card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; width: 350px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
             .league { font-size: 0.8em; color: #ff9800; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
-            .match { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; }
-            .stat-box { background: #2a2a2a; padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 15px; color: #ccc; }
+            .match { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; letter-spacing: -0.5px; }
+            .stat-box { background: #2a2a2a; padding: 12px; border-radius: 8px; font-size: 0.9em; margin-bottom: 15px; color: #ccc; line-height: 1.5; }
+            .stat-team { color: #fff; font-weight: bold; }
             .result { font-size: 1em; font-weight: bold; color: #00E676; border-top: 1px dashed #444; padding-top: 15px; text-align: center; line-height: 1.6; }
             .no-match { text-align: center; color: #ff5252; font-size: 1.2em; width: 100%; }
         </style>
@@ -24,72 +25,72 @@
         <div class="container">
     
                 <div class="card">
-                    <div class="league">Friendlies</div>
+                    <div class="league">A매치 친선전</div>
                     <div class="match">Norway vs Sweden</div>
                     <div class="stat-box">
-                        <strong>Norway</strong>: 점유율 55.0% / 유효슈팅 7.0개<br>
-                        <strong>Sweden</strong>: 점유율 45.0% / 유효슈팅 5.0개
+                        <span class="stat-team">Norway</span> : 점유율 55.0% / 유효슈팅 7.0개<br>
+                        <span class="stat-team">Sweden</span> : 점유율 45.0% / 유효슈팅 5.0개
                     </div>
                     <div class="result">
-                        승무패: 🟢 Norway 승리 예상<br>
-                        경기흐름: 팽팽한 중원 싸움<br>
-                        언오버: 🔥 오버 (다득점)
+                        🎯 승무패: 🟢 Norway 승리 예상<br>
+                        ⚔️ 주도권: 팽팽한 중원 싸움<br>
+                        📊 언오버: 🔥 오버 (다득점 페이스)
                     </div>
                 </div>
                 
                 <div class="card">
-                    <div class="league">Friendlies</div>
+                    <div class="league">A매치 친선전</div>
                     <div class="match">Türkiye vs FYR Macedonia</div>
                     <div class="stat-box">
-                        <strong>Türkiye</strong>: 점유율 60.0% / 유효슈팅 8.0개<br>
-                        <strong>FYR Macedonia</strong>: 점유율 40.0% / 유효슈팅 2.0개
+                        <span class="stat-team">Türkiye</span> : 점유율 60.0% / 유효슈팅 8.0개<br>
+                        <span class="stat-team">FYR Macedonia</span> : 점유율 40.0% / 유효슈팅 2.0개
                     </div>
                     <div class="result">
-                        승무패: 🟢 Türkiye 승리 예상<br>
-                        경기흐름: Türkiye 주도<br>
-                        언오버: 🔥 오버 (다득점)
+                        🎯 승무패: 🟢 Türkiye 승리 예상<br>
+                        ⚔️ 주도권: Türkiye 주도<br>
+                        📊 언오버: 🔥 오버 (다득점 페이스)
                     </div>
                 </div>
                 
                 <div class="card">
-                    <div class="league">Friendlies</div>
+                    <div class="league">A매치 친선전</div>
                     <div class="match">Austria vs Tunisia</div>
                     <div class="stat-box">
-                        <strong>Austria</strong>: 점유율 59.0% / 유효슈팅 4.0개<br>
-                        <strong>Tunisia</strong>: 점유율 41.0% / 유효슈팅 2.0개
+                        <span class="stat-team">Austria</span> : 점유율 59.0% / 유효슈팅 4.0개<br>
+                        <span class="stat-team">Tunisia</span> : 점유율 41.0% / 유효슈팅 2.0개
                     </div>
                     <div class="result">
-                        승무패: 🟢 Austria 승리 예상<br>
-                        경기흐름: Austria 주도<br>
-                        언오버: ⚖️ 예측 불가
+                        🎯 승무패: 🟢 Austria 승리 예상<br>
+                        ⚔️ 주도권: Austria 주도<br>
+                        📊 언오버: ⚖️ 언오버 팽팽
                     </div>
                 </div>
                 
                 <div class="card">
-                    <div class="league">Friendlies</div>
+                    <div class="league">A매치 친선전</div>
                     <div class="match">Colombia vs Costa Rica</div>
                     <div class="stat-box">
-                        <strong>Colombia</strong>: 점유율 67.0% / 유효슈팅 4.0개<br>
-                        <strong>Costa Rica</strong>: 점유율 33.0% / 유효슈팅 3.0개
+                        <span class="stat-team">Colombia</span> : 점유율 67.0% / 유효슈팅 4.0개<br>
+                        <span class="stat-team">Costa Rica</span> : 점유율 33.0% / 유효슈팅 3.0개
                     </div>
                     <div class="result">
-                        승무패: 🟢 Colombia 승리 예상<br>
-                        경기흐름: Colombia 주도<br>
-                        언오버: ⚖️ 예측 불가
+                        🎯 승무패: 🟢 Colombia 승리 예상<br>
+                        ⚔️ 주도권: Colombia 주도<br>
+                        📊 언오버: ⚖️ 언오버 팽팽
                     </div>
                 </div>
                 
                 <div class="card">
-                    <div class="league">Friendlies</div>
+                    <div class="league">A매치 친선전</div>
                     <div class="match">Canada vs Uzbekistan</div>
                     <div class="stat-box">
-                        <strong>Canada</strong>: 점유율 59.0% / 유효슈팅 1.0개<br>
-                        <strong>Uzbekistan</strong>: 점유율 41.0% / 유효슈팅 0.0개
+                        <span class="stat-team">Canada</span> : 점유율 57.0% / 유효슈팅 1.0개<br>
+                        <span class="stat-team">Uzbekistan</span> : 점유율 43.0% / 유효슈팅 0.0개
                     </div>
                     <div class="result">
-                        승무패: 🟢 Canada 승리 예상<br>
-                        경기흐름: Canada 주도<br>
-                        언오버: ❄️ 언더 (저득점)
+                        🎯 승무패: 🟢 Canada 승리 예상<br>
+                        ⚔️ 주도권: 팽팽한 중원 싸움<br>
+                        📊 언오버: ❄️ 언더 (저득점 늪축구)
                     </div>
                 </div>
                 
