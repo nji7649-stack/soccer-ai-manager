@@ -4,40 +4,23 @@ from datetime import datetime
 from deep_translator import GoogleTranslator
 import time
 
-# 🎨 1. 웹사이트 기본 설정 (가장 먼저 와야 함)
+# 🎨 웹사이트 기본 설정
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 2. 예전의 그 예쁜 '다크 모드 카드 디자인'을 스트림릿에 강제 주입!
+# 🎨 다크모드 카드 UI 디자인 
 custom_css = """
 <style>
-    /* 전체 배경을 어둡게 */
     .stApp { background-color: #121212; }
-    
-    /* 그리드 레이아웃 (반응형 3단 배열) */
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-    
-    /* 예쁜 카드 디자인 */
     .match-card {
         background: #1e1e1e; border: 1px solid #333; border-radius: 12px; 
         padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-        color: #ffffff; transition: 0.3s;
+        color: #ffffff; transition: 0.3s; margin-bottom: 20px;
     }
     .match-card:hover { border-color: #00E676; transform: translateY(-5px); }
-    
     .league-title { font-size: 0.85em; color: #ff9800; font-weight: bold; margin-bottom: 10px; }
-    .teams-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; letter-spacing: -0.5px; }
-    
+    .teams-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; }
     .stat-box { background: #2a2a2a; padding: 12px; border-radius: 8px; font-size: 0.9em; margin-bottom: 15px; color: #ccc; line-height: 1.6; }
-    .stat-team { color: #fff; font-weight: bold; }
-    
     .ai-result { font-size: 1em; font-weight: bold; color: #00E676; border-top: 1px dashed #444; padding-top: 15px; text-align: center; line-height: 1.6; }
-    
-    /* 라인업 토글 디자인 */
     details { margin-top: 15px; font-size: 0.85em; color: #aaa; cursor: pointer; }
     summary { outline: none; color: #00bcd4; font-weight: bold; margin-bottom: 10px; }
     .lineup-box { background: #222; padding: 10px; border-radius: 5px; line-height: 1.5; border-left: 3px solid #00bcd4; }
@@ -74,20 +57,25 @@ LEAGUE_MAP = {
 
 selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["39", "140", "292"])
 
-# 버튼 클릭 시 실행
+# 💡 세션 상태(메모리) 초기화
+if 'is_analyzed' not in st.session_state:
+    st.session_state['is_analyzed'] = False
+if 'html_result' not in st.session_state:
+    st.session_state['html_result'] = ""
+
+# 🚀 데이터 불러오기 버튼
 if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
     if not selected_leagues:
         st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
         st.stop()
         
     url = "https://v3.football.api-sports.io/fixtures"
-    
-    # 🌟 로딩 바 추가 (진행률 표시)
     progress_bar = st.progress(0)
     status_text = st.empty()
     
     html_cards = ""
     total_leagues = len(selected_leagues)
+    matches_found = False
     
     for idx, league_id in enumerate(selected_leagues):
         status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 데이터 분석 중... ({idx+1}/{total_leagues})")
@@ -100,6 +88,7 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
             fixtures = res.get('response', [])
             
             for match in fixtures:
+                matches_found = True
                 fix_id = str(match['fixture']['id'])
                 home_en = match['teams']['home']['name']
                 away_en = match['teams']['away']['name']
@@ -108,12 +97,20 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                 away_kr = translate_to_ko(away_en)
                 status = match['fixture']['status']['short']
                 
-                # 스탯 및 라인업 API 찌르기 (Pro 플랜이므로 넉넉합니다!)
+                # 스탯 & 라인업 API 찌르기
                 stats_data = requests.get("https://v3.football.api-sports.io/fixtures/statistics", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 lineup_data = requests.get("https://v3.football.api-sports.io/fixtures/lineups", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
                 if not stats_data or len(stats_data) < 2:
-                    continue # 데이터 없는 경기는 패스
+                    # 스탯이 없으면 예측을 건너뛰고 기본 정보만 출력
+                    html_cards += f"""
+                    <div class="match-card">
+                        <div class="league-title">{LEAGUE_MAP[league_id]}</div>
+                        <div class="teams-title">{home_kr} vs {away_kr} <span style="font-size:0.7em; color:#888;">[{status}]</span></div>
+                        <div style="text-align:center; color:#ff5252;">⚠️ 아직 스탯 데이터가 등록되지 않았습니다.</div>
+                    </div>
+                    """
+                    continue
                 
                 h_stats = stats_data[0]['statistics']
                 a_stats = stats_data[1]['statistics']
@@ -162,7 +159,7 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                 </div>
                 """
         except Exception as e:
-            pass
+            st.error(f"통신 에러: {e}")
 
     progress_bar.progress(1.0)
     status_text.text("✅ 모든 데이터 분석이 완료되었습니다!")
@@ -170,12 +167,14 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
     status_text.empty()
     progress_bar.empty()
 
-    # 🎨 완성된 카드들을 그리드 레이아웃 안에 넣어서 화면에 띄움!
-    if html_cards:
-        st.session_state['saved_html'] = f'<div class="grid-container">{html_cards}</div>'
+    # 💡 분석 완료된 HTML을 메모리에 영구 저장!
+    if matches_found and html_cards:
+        st.session_state['html_result'] = f'<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">{html_cards}</div>'
+        st.session_state['is_analyzed'] = True
     else:
-        st.session_state['saved_html'] = "<h3 style='text-align:center; color:#ff5252;'>해당 날짜에 분석 가능한 데이터가 없습니다.</h3>"
+        st.session_state['html_result'] = "<h3 style='text-align:center; color:#ff5252;'>해당 날짜에 분석 가능한 데이터가 없습니다.</h3>"
+        st.session_state['is_analyzed'] = True
 
-# 💡 버튼 클릭과 상관없이 메모리에 저장된 HTML을 계속 보여줌 (초기화 방지)
-if 'saved_html' in st.session_state:
-    st.markdown(st.session_state['saved_html'], unsafe_allow_html=True)
+# 💡 메모리에 저장된 카드를 항상 화면에 출력
+if st.session_state['is_analyzed']:
+    st.markdown(st.session_state['html_result'], unsafe_allow_html=True)
