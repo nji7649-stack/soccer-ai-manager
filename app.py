@@ -6,33 +6,31 @@ import time
 
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 기본 디자인 세팅 및 다크모드 전술판 크기 고정 CSS
-st.markdown("""
+# 🎨 UI 고정 CSS (네온 그린 통일 및 오렌지색 채점, 박스 크기 고정)
+custom_css = """
 <style>
 .stApp { background-color: #121212; }
 .card-box {
     background-color: #1e1e1e; padding: 20px; border-radius: 10px;
-    border: 1px solid #444; box-shadow: 0 4px 8px rgba(0,0,0,0.5); margin-bottom: 10px;
+    border: 1px solid #444; box-shadow: 0 4px 8px rgba(0,0,0,0.5); margin-bottom: 20px;
+    min-height: 280px; display: flex; flex-direction: column; justify-content: space-between;
 }
-.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center;}
 .match-txt { color: #ffffff; font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 15px; }
-.stat-bg { background-color: #2a2a2a; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 14px; line-height: 1.6; }
-.predict-txt { color: #00E676; font-size: 16px; font-weight: bold; text-align: center; border-top: 1px dashed #555; padding-top: 15px; margin-top: 15px; line-height: 1.6; }
-
-/* 💡 다크모드 전술판 강제 크기 고정 클래스 */
-.dark-tactical-board {
-    border: 2px solid #333; 
-    border-radius: 8px; 
-    background: #0a0a0a; /* 아주 어두운 검정 바탕 */
-    padding: 10px; 
-    margin-bottom: 10px;
-    height: 380px; /* 💡 높이 강제 고정 */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around; /* 포메이션 간격 균등 분배 */
+.stat-bg { background-color: #2a2a2a; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 14px; line-height: 1.6; text-align: center;}
+.predict-txt { 
+    color: #00E676; 
+    font-size: 16px; 
+    font-weight: bold; 
+    text-align: center; 
+    border-top: 1px dashed #555; 
+    padding-top: 15px; 
+    margin-top: 15px; 
+    line-height: 1.6; 
 }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
 
 API_KEY = st.secrets["FOOTBALL_API_KEY"]
 HEADERS = {'x-apisports-key': API_KEY}
@@ -43,42 +41,15 @@ def translate_to_ko(text):
     except: return text
 
 def safe_num(value):
-    if value is None or value == 'N/A': return 0
-    if isinstance(value, str): return float(value.replace('%', ''))
-    return float(value)
+    if value is None or str(value).strip() in ['', 'N/A']: return 0.0
+    try: return float(str(value).replace('%', '').replace('+', '').replace('-', ''))
+    except: return 0.0
 
-# 💡 개선된 함수: 다크모드 전술판 그리기 (크기 고정 + 흰/검 블록)
-def draw_dark_tactical_board(team_name, lineup_info):
-    if not lineup_info or 'startXI' not in lineup_info:
-        return f"<div style='text-align:center; color:#888; padding:10px; height: 380px; display:flex; align-items:center; justify-content:center;'>{team_name} 명단 미발표</div>"
-    
-    formation = lineup_info.get('formation', '포메이션 미정')
-    startXI = lineup_info['startXI']
-    
-    rows = {}
-    for p in startXI:
-        grid = p.get('player', {}).get('grid')
-        name = p.get('player', {}).get('name', 'Unknown')
-        short_name = name.split()[-1][:8] 
-        
-        row_idx = int(grid.split(':')[0]) if grid else 0
-        if row_idx not in rows: rows[row_idx] = []
-        rows[row_idx].append(short_name)
-        
-    board_html = f"<div style='text-align:center; color: #aaa; font-weight: bold; margin-bottom: 10px; font-size:13px;'>{team_name} <span style='color:#fff;'>({formation})</span></div>"
-    board_html += f"<div class='dark-tactical-board'>"
-    
-    for row_idx in sorted(rows.keys(), reverse=True):
-        players = rows[row_idx]
-        board_html += "<div style='display: flex; justify-content: space-evenly; width: 100%;'>"
-        for player in players:
-            # 💡 다크모드 맞춤형 선수 블록 (흰색 바탕, 검정 글씨, 둥근 디자인)
-            board_html += f"<div style='background: #ffffff; color: #000000; padding: 6px 10px; border-radius: 15px; font-size: 11px; font-weight:bold; white-space: nowrap; box-shadow: 0 0 5px rgba(255,255,255,0.3);'>{player}</div>"
-        board_html += "</div>"
-    board_html += "</div>"
-    return board_html
+def safe_text(value):
+    if not value or str(value).strip() == "": return "N/A"
+    return str(value)
 
-st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 라이브 AI 축구 승부 예측 PRO</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 사전 승부 예측 AI (세이버메트릭스)</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
 st.sidebar.header("🔍 검색 설정")
@@ -92,11 +63,10 @@ LEAGUE_MAP = {
 
 selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["39", "140", "292"])
 
-# 세션 초기화
 if 'analyzed_html_list' not in st.session_state:
     st.session_state['analyzed_html_list'] = []
 
-if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
+if st.sidebar.button("🚀 베팅 데이터 불러오기"):
     if not selected_leagues:
         st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
         st.stop()
@@ -109,7 +79,7 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
     new_html_list = []
     
     for idx, league_id in enumerate(selected_leagues):
-        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 데이터 분석 중... ({idx+1}/{total_leagues})")
+        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 빅데이터 분석 중...")
         progress_bar.progress((idx) / total_leagues)
         
         querystring = {"league": league_id, "season": str(selected_date.year), "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
@@ -120,113 +90,131 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
             
             for match in fixtures:
                 fix_id = str(match['fixture']['id'])
-                home_en = match['teams']['home']['name']
-                away_en = match['teams']['away']['name']
+                home_kr = translate_to_ko(match['teams']['home']['name'])
+                away_kr = translate_to_ko(match['teams']['away']['name'])
                 
-                # 팀 이름 캐시 번역
-                home_kr = translate_to_ko(home_en)
-                away_kr = translate_to_ko(away_en)
+                status_short = match['fixture']['status']['short']
+                elapsed_time = match['fixture']['status']['elapsed']
+                is_finished = status_short in ['FT', 'AET', 'PEN']
+                is_live = status_short in ['1H', 'HT', '2H', 'ET', 'P']
                 
-                status = match['fixture']['status']['short']
-                is_finished = status in ['FT', 'AET', 'PEN']
+                match_date_raw = match['fixture']['date']
+                try: time_str = datetime.strptime(match_date_raw[:16], "%Y-%m-%dT%H:%M").strftime("%H:%M")
+                except: time_str = "시간미정"
                 
+                top_league_display = f"{LEAGUE_MAP[league_id]} ({time_str})"
+                
+                h_goal = match['goals']['home'] if match['goals']['home'] is not None else 0
+                a_goal = match['goals']['away'] if match['goals']['away'] is not None else 0
+                
+                # 💡 핵심 1: 무조건 팀 이름을 좌우(가로) 한 줄로 배치
                 if is_finished:
-                    h_goal = match['goals']['home']
-                    a_goal = match['goals']['away']
-                    score_html = f"<span style='font-size:26px; color:#00E676; margin: 0 15px;'>{h_goal} : {a_goal}</span>"
-                    match_display = f"{home_kr} <br> {score_html} <br> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[종료됨]</div>"
+                    match_display = f"{home_kr} <span style='color:#00E676; margin:0 15px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[종료됨]</div>"
+                elif is_live:
+                    live_label = "하프타임" if status_short == 'HT' else f"전/후반 {elapsed_time}분"
+                    match_display = f"{home_kr} <span style='color:#ff9800; margin:0 15px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr} <div style='font-size:12px; color:#ff9800; margin-top:5px;'>🔊 실시간 진행 중 ({live_label})</div>"
                 else:
-                    match_display = f"{home_kr} <br> <span style='font-size:16px; color:#888;'>vs</span> <br> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[{status}]</div>"
+                    match_display = f"{home_kr} <span style='color:#888; font-size:18px; margin:0 15px;'>VS</span> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[경기 시작 전]</div>"
 
-                stats_data = requests.get("https://v3.football.api-sports.io/fixtures/statistics", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
-                lineup_data = requests.get("https://v3.football.api-sports.io/fixtures/lineups", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
+                pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
-                if not stats_data or len(stats_data) < 2:
-                    continue 
+                if not pred_res:
+                    continue
                 
-                # 💡 감독님이 가장 선호하시는 실시간 스탯(점유율+슈팅) 알고리즘
-                h_stats = stats_data[0]['statistics']
-                a_stats = stats_data[1]['statistics']
+                pred_data = pred_res[0]
+                preds = pred_data.get('predictions', {})
+                comparison = pred_data.get('comparison', {})
+                
+                form_h = safe_text(comparison.get('form', {}).get('home'))
+                form_a = safe_text(comparison.get('form', {}).get('away'))
+                att_h = safe_text(comparison.get('att', {}).get('home'))
+                att_a = safe_text(comparison.get('att', {}).get('away'))
+                def_h = safe_text(comparison.get('def', {}).get('home'))
+                def_a = safe_text(comparison.get('def', {}).get('away'))
 
-                h_poss = safe_num(next((item['value'] for item in h_stats if item['type'] == 'Ball Possession'), 0))
-                h_shot = safe_num(next((item['value'] for item in h_stats if item['type'] == 'Shots on Goal'), 0))
-                a_poss = safe_num(next((item['value'] for item in a_stats if item['type'] == 'Ball Possession'), 0))
-                a_shot = safe_num(next((item['value'] for item in a_stats if item['type'] == 'Shots on Goal'), 0))
-
-                h_score = (h_poss * 0.1) + (h_shot * 1.5)
-                a_score = (a_poss * 0.1) + (a_shot * 1.5)
+                h_pct = safe_num(preds.get('percent', {}).get('home'))
+                a_pct = safe_num(preds.get('percent', {}).get('away'))
+                d_pct = safe_num(preds.get('percent', {}).get('draw'))
                 
-                if h_score > a_score + 2.5:
+                # 💡 핵심 2: 데이터가 없어서 0% vs 0% 가 나올 경우 '무승부'가 아닌 '패스'로 강제 치환
+                is_no_data = False
+                if (h_pct == 0 and a_pct == 0) or (h_pct == 50 and a_pct == 50 and d_pct == 0):
+                    is_no_data = True
+                
+                if is_no_data:
+                    pred_winner = "none"
+                    win_pick = "⚠️ 전력 데이터 부족 (배팅 패스)"
+                elif h_pct > a_pct + 5: # 단 5%라도 높으면 승리 픽
                     pred_winner = "home"
                     win_pick = f"🟢 {home_kr} 승리 유력"
-                elif a_score > h_score + 2.5:
+                elif a_pct > h_pct + 5:
                     pred_winner = "away"
                     win_pick = f"🔵 {away_kr} 승리 유력"
                 else:
                     pred_winner = "draw"
-                    win_pick = "🟡 무승부 접전"
-                
-                # 적중 채점
-                if is_finished:
+                    win_pick = f"🟡 팽팽한 무승부 배당"
+
+                if is_finished and pred_winner != "none":
                     if h_goal > a_goal: actual_winner = "home"
                     elif a_goal > h_goal: actual_winner = "away"
                     else: actual_winner = "draw"
                     
-                    if actual_winner == pred_winner:
-                        win_pick += " <span style='color:#ff9800; font-size:15px;'>(적중)</span>"
-                    else:
-                        win_pick += " <span style='color:#ff9800; font-size:15px;'>(미적중)</span>"
+                    if actual_winner == pred_winner: win_pick += " <span style='color:#ff9800;'>(적중)</span>"
+                    else: win_pick += " <span style='color:#ff9800;'>(미적중)</span>"
+                        
+                advice = preds.get('advice', '')
+                if not advice or str(advice).strip() == "":
+                    control_pick = "💡 코멘트: 친선전 등 데이터가 부족한 매치입니다."
+                else:
+                    translated_advice = translate_to_ko(advice)
+                    control_pick = f"💡 코멘트: {translated_advice}"
+                
+                under_over_val = preds.get('under_over', '')
+                if under_over_val and str(under_over_val).strip() != "":
+                    uo_text = "언더" if "-" in under_over_val else "오버"
+                    clean_val = under_over_val.replace('-', '').replace('+', '')
+                    over_under = f"📊 예상 골 기준점: {clean_val} {uo_text}"
+                else:
+                    over_under = "📊 언더/오버 기준점 미제공"
+                    
+                advanced_stats_html = f"""
+                <span style="color:#aaa;">승률:</span> 홈 <b>{h_pct}%</b> | 무 <b>{d_pct}%</b> | 원정 <b>{a_pct}%</b><br>
+                <span style="color:#aaa;">최근 폼:</span> <b>{form_h}</b> vs <b>{form_a}</b><br>
+                <span style="color:#aaa;">공/수:</span> <b>{att_h} / {def_h}</b> vs <b>{att_a} / {def_a}</b>
+                """
 
-                control_pick = f"{home_kr} 주도" if h_poss > a_poss + 15 else (f"{away_kr} 주도" if a_poss > h_poss + 15 else "팽팽한 중원 싸움")
-                total_shots = h_shot + a_shot
-                over_under = "🔥 오버 (다득점 페이스)" if total_shots >= 9 else ("❄️ 언더 (저득점 늪축구)" if total_shots <= 5 else "⚖️ 언오버 팽팽")
-
-                # 💡 다크모드 전술판 렌더링 호출
-                h_pitch = draw_dark_tactical_board(home_kr, lineup_data[0] if lineup_data else None)
-                a_pitch = draw_dark_tactical_board(away_kr, lineup_data[1] if lineup_data and len(lineup_data)>1 else None)
-
-                # 데이터를 딕셔너리로 저장 (HTML 구조 꼬임 방지)
                 new_html_list.append({
-                    "league": LEAGUE_MAP[league_id],
+                    "league": top_league_display,
                     "match_display": match_display,
-                    "h_kr": home_kr, "a_kr": away_kr,
-                    "h_poss": h_poss, "h_shot": h_shot, "a_poss": a_poss, "a_shot": a_shot,
-                    "win_pick": win_pick, "control_pick": control_pick, "over_under": over_under,
-                    "h_pitch": h_pitch, "a_pitch": a_pitch
+                    "advanced_stats": advanced_stats_html,
+                    "win_pick": win_pick, 
+                    "control_pick": control_pick, 
+                    "over_under": over_under
                 })
-
-        except:
+        except Exception as e:
             pass
 
     progress_bar.progress(1.0)
-    status_text.text("✅ 모든 데이터 분석이 완료되었습니다!")
+    status_text.text("✅ 빅데이터 분석 완료!")
     time.sleep(1)
     status_text.empty()
     progress_bar.empty()
 
     st.session_state['analyzed_html_list'] = new_html_list
 
-# 💡 화면 출력 로직 (HTML 들여쓰기 에러 원천 차단)
+# 화면 출력 (따옴표 버그 원천 차단을 위해 HTML 문자열 이어붙이기 사용)
 if st.session_state['analyzed_html_list']:
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_html_list']):
-        
-        # 1. 윗부분 카드 생성
         html_str = "<div class='card-box'>"
         html_str += f"<div class='league-txt'>{data['league']}</div>"
         html_str += f"<div class='match-txt'>{data['match_display']}</div>"
-        html_str += f"<div class='stat-bg'><b style='color:#fff;'>{data['h_kr']}</b> : 점유율 {data['h_poss']}% / 슈팅 {data['h_shot']}개<br>"
-        html_str += f"<b style='color:#fff;'>{data['a_kr']}</b> : 점유율 {data['a_poss']}% / 슈팅 {data['a_shot']}개</div>"
+        html_str += f"<div class='stat-bg'>{data['advanced_stats']}</div>"
         html_str += f"<div class='predict-txt'>🎯 {data['win_pick']}<br>"
-        html_str += f"<span style='font-size: 15px; font-weight: bold; color: #00E676;'>"
-        html_str += f"⚔️ {data['control_pick']}<br>📊 {data['over_under']}</span></div></div>"
+        html_str += f"<span style='font-size: 14px; font-weight: normal; color: #00E676;'>"
+        html_str += f"{data['control_pick']}<br>{data['over_under']}</span></div></div>"
         
         with cols[idx % 3]:
             st.markdown(html_str, unsafe_allow_html=True)
-            
-            # 2. 전술판 메뉴 (안전하게 스트림릿 네이티브 기능 사용)
-            with st.expander("▶ 다크모드 전술판 및 라인업"):
-                st.markdown(data['h_pitch'], unsafe_allow_html=True)
-                st.markdown(data['a_pitch'], unsafe_allow_html=True)
 elif st.session_state['analyzed_html_list'] == []:
     st.markdown("")
