@@ -6,7 +6,7 @@ import time
 
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 UI 고정 CSS (네온 그린 통일 및 오렌지색 채점)
+# 🎨 UI 고정 CSS
 custom_css = """
 <style>
 .stApp { background-color: #121212; }
@@ -81,12 +81,6 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
         
         try:
             res = requests.get(url, headers=HEADERS, params=querystring, timeout=10).json()
-            
-            # 유료 API 에러 검출기 (만약 에러가 나면 진짜 에러 원인을 영어로 보여줌)
-            if 'errors' in res and res['errors']:
-                st.error(f"🚨 API 에러: {res['errors']}")
-                st.stop()
-
             fixtures = res.get('response', [])
             
             for match in fixtures:
@@ -114,7 +108,6 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                 else:
                     match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 10px;'>VS</span> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[경기 시작 전]</div>"
 
-                # 💡 사전 예측 API 연결 (유료 플랜 최적화)
                 pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
                 if not pred_res:
@@ -131,16 +124,12 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                 def_h = comparison.get('def', {}).get('home', '50%')
                 def_a = comparison.get('def', {}).get('away', '50%')
 
-                advanced_stats_html = f"""
-                <span style="color:#fff;">최근 전력(Form):</span> {home_kr} <b>{form_h}</b> vs <b>{form_a}</b> {away_kr}<br>
-                <span style="color:#fff;">공격력 지표:</span> {home_kr} <b>{att_h}</b> vs <b>{att_a}</b> {away_kr}<br>
-                <span style="color:#fff;">수비력 지표:</span> {home_kr} <b>{def_h}</b> vs <b>{def_a}</b> {away_kr}
-                """
-                
+                # 💡 버그 픽스: HTML 따옴표가 꼬이지 않도록 변수 조립 방식 변경
                 h_pct = safe_num(preds['percent']['home'])
                 a_pct = safe_num(preds['percent']['away'])
                 d_pct = safe_num(preds['percent']['draw'])
                 
+                # 💡 버그 픽스: 1%라도 높으면 무조건 승리 예측 픽 (무승부 남발 방지)
                 if h_pct > a_pct and h_pct > d_pct:
                     pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 유력 ({h_pct}%)"
                 elif a_pct > h_pct and a_pct > d_pct:
@@ -158,25 +147,26 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                         
                 advice = preds.get('advice', '데이터 분석 중')
                 translated_advice = translate_to_ko(advice)
-                control_pick = f"💡 AI 분석 코멘트: {translated_advice}"
+                control_pick = f"💡 코멘트: {translated_advice}"
                 
                 under_over_val = preds.get('under_over', '')
                 if under_over_val:
-                    uo_text = "언더 (저득점)" if "-" in under_over_val else "오버 (다득점)"
+                    uo_text = "언더" if "-" in under_over_val else "오버"
                     clean_val = under_over_val.replace('-', '').replace('+', '')
                     over_under = f"📊 기준점 {clean_val} {uo_text}"
                 else:
-                    over_under = "📊 언더/오버 기준점 미제공"
+                    over_under = "📊 기준점 미제공"
 
                 new_html_list.append({
                     "league": top_league_display,
                     "match_display": match_display,
-                    "advanced_stats": advanced_stats_html,
-                    "win_pick": win_pick, 
-                    "control_pick": control_pick, 
-                    "over_under": over_under
+                    "home_kr": home_kr, "away_kr": away_kr,
+                    "form_h": form_h, "form_a": form_a,
+                    "att_h": att_h, "att_a": att_a,
+                    "def_h": def_h, "def_a": def_a,
+                    "win_pick": win_pick, "control_pick": control_pick, "over_under": over_under
                 })
-        except Exception as e:
+        except:
             pass
 
     progress_bar.progress(1.0)
@@ -187,6 +177,7 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
 
     st.session_state['analyzed_html_list'] = new_html_list
 
+# 💡 화면 출력 (HTML 깨짐 원천 차단)
 if st.session_state['analyzed_html_list']:
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_html_list']):
@@ -196,7 +187,9 @@ if st.session_state['analyzed_html_list']:
                 <div class="league-txt">{data['league']}</div>
                 <div class="match-txt">{data['match_display']}</div>
                 <div class="stat-bg">
-                    {data['advanced_stats']}
+                    <span style="color:#aaa;">최근 폼:</span> <b>{data['form_h']}</b> vs <b>{data['form_a']}</b><br>
+                    <span style="color:#aaa;">공격력:</span> <b>{data['att_h']}</b> vs <b>{data['att_a']}</b><br>
+                    <span style="color:#aaa;">수비력:</span> <b>{data['def_h']}</b> vs <b>{data['def_a']}</b>
                 </div>
                 <div class="predict-txt">
                     🎯 {data['win_pick']}<br>
