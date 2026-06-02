@@ -39,10 +39,18 @@ def translate_to_ko(text):
     try: return GoogleTranslator(source='en', target='ko').translate(text)
     except: return text
 
+# 💡 빈칸 방어 함수 1: 숫자가 비어있으면 0으로 안전하게 변환
 def safe_num(value):
-    if value is None or value == 'N/A': return 0
-    if isinstance(value, str): return float(value.replace('%', '').replace('+', '').replace('-', ''))
+    if value is None or str(value).strip() == '' or str(value).strip() == 'N/A': return 0
+    if isinstance(value, str): 
+        try: return float(value.replace('%', '').replace('+', '').replace('-', ''))
+        except: return 0
     return float(value)
+
+# 💡 빈칸 방어 함수 2: 글자가 비어있으면 'N/A'로 깔끔하게 표시
+def safe_text(value):
+    if not value or str(value).strip() == "": return "N/A"
+    return str(value)
 
 st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 사전 승부 예측 AI (세이버메트릭스)</h1>", unsafe_allow_html=True)
 st.markdown("---")
@@ -114,30 +122,36 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                     continue
                 
                 pred_data = pred_res[0]
-                preds = pred_data['predictions']
-                comparison = pred_data['comparison']
+                preds = pred_data.get('predictions', {})
+                comparison = pred_data.get('comparison', {})
                 
-                form_h = comparison.get('form', {}).get('home', '50%')
-                form_a = comparison.get('form', {}).get('away', '50%')
-                att_h = comparison.get('att', {}).get('home', '50%')
-                att_a = comparison.get('att', {}).get('away', '50%')
-                def_h = comparison.get('def', {}).get('home', '50%')
-                def_a = comparison.get('def', {}).get('away', '50%')
+                # 💡 안전하게 데이터 추출 (빈칸이면 N/A)
+                form_h = safe_text(comparison.get('form', {}).get('home'))
+                form_a = safe_text(comparison.get('form', {}).get('away'))
+                att_h = safe_text(comparison.get('att', {}).get('home'))
+                att_a = safe_text(comparison.get('att', {}).get('away'))
+                def_h = safe_text(comparison.get('def', {}).get('home'))
+                def_a = safe_text(comparison.get('def', {}).get('away'))
 
-                # 💡 버그 픽스: HTML 따옴표가 꼬이지 않도록 변수 조립 방식 변경
-                h_pct = safe_num(preds['percent']['home'])
-                a_pct = safe_num(preds['percent']['away'])
-                d_pct = safe_num(preds['percent']['draw'])
+                h_pct = safe_num(preds.get('percent', {}).get('home'))
+                a_pct = safe_num(preds.get('percent', {}).get('away'))
+                d_pct = safe_num(preds.get('percent', {}).get('draw'))
                 
-                # 💡 버그 픽스: 1%라도 높으면 무조건 승리 예측 픽 (무승부 남발 방지)
-                if h_pct > a_pct and h_pct > d_pct:
-                    pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 유력 ({h_pct}%)"
+                # 💡 모든 확률이 0이면 (데이터를 못 받아오면) 예외 처리
+                if h_pct == 0 and a_pct == 0 and d_pct == 0:
+                    pred_winner = "none"
+                    win_pick = "⚠️ 전력 데이터 부족 (예측 불가)"
+                elif h_pct > a_pct and h_pct > d_pct:
+                    pred_winner = "home"
+                    win_pick = f"🟢 {home_kr} 승리 유력 ({h_pct}%)"
                 elif a_pct > h_pct and a_pct > d_pct:
-                    pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 유력 ({a_pct}%)"
+                    pred_winner = "away"
+                    win_pick = f"🔵 {away_kr} 승리 유력 ({a_pct}%)"
                 else:
-                    pred_winner, win_pick = "draw", f"🟡 팽팽한 무승부 예상 ({d_pct}%)"
+                    pred_winner = "draw"
+                    win_pick = f"🟡 팽팽한 무승부 예상 ({d_pct}%)"
 
-                if is_finished:
+                if is_finished and pred_winner != "none":
                     if h_goal > a_goal: actual_winner = "home"
                     elif a_goal > h_goal: actual_winner = "away"
                     else: actual_winner = "draw"
@@ -145,17 +159,20 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                     if actual_winner == pred_winner: win_pick += " <span style='color:#ff9800;'>(적중)</span>"
                     else: win_pick += " <span style='color:#ff9800;'>(미적중)</span>"
                         
-                advice = preds.get('advice', '데이터 분석 중')
-                translated_advice = translate_to_ko(advice)
-                control_pick = f"💡 코멘트: {translated_advice}"
+                advice = preds.get('advice', '')
+                if not advice or str(advice).strip() == "":
+                    control_pick = "💡 코멘트: API 분석 코멘트가 제공되지 않는 경기입니다."
+                else:
+                    translated_advice = translate_to_ko(advice)
+                    control_pick = f"💡 코멘트: {translated_advice}"
                 
                 under_over_val = preds.get('under_over', '')
-                if under_over_val:
+                if under_over_val and str(under_over_val).strip() != "":
                     uo_text = "언더" if "-" in under_over_val else "오버"
                     clean_val = under_over_val.replace('-', '').replace('+', '')
                     over_under = f"📊 기준점 {clean_val} {uo_text}"
                 else:
-                    over_under = "📊 기준점 미제공"
+                    over_under = "📊 언더/오버 기준점 미제공"
 
                 new_html_list.append({
                     "league": top_league_display,
@@ -166,7 +183,7 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                     "def_h": def_h, "def_a": def_a,
                     "win_pick": win_pick, "control_pick": control_pick, "over_under": over_under
                 })
-        except:
+        except Exception as e:
             pass
 
     progress_bar.progress(1.0)
@@ -177,7 +194,7 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
 
     st.session_state['analyzed_html_list'] = new_html_list
 
-# 💡 화면 출력 (HTML 깨짐 원천 차단)
+# 화면 출력 
 if st.session_state['analyzed_html_list']:
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_html_list']):
@@ -192,9 +209,11 @@ if st.session_state['analyzed_html_list']:
                     <span style="color:#aaa;">수비력:</span> <b>{data['def_h']}</b> vs <b>{data['def_a']}</b>
                 </div>
                 <div class="predict-txt">
-                    🎯 {data['win_pick']}<br>
-                    ⚔️ {data['control_pick']}<br>
+                    {data['win_pick']}<br>
+                    <span style="font-size: 14px; font-weight: normal; color: #00E676;">
+                    {data['control_pick']}<br>
                     {data['over_under']}
+                    </span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
