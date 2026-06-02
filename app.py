@@ -6,7 +6,7 @@ import time
 
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 UI 고정 CSS (네온 그린 통일 및 오렌지색 채점)
+# 🎨 UI 고정 (네온 초록색 통일 및 오렌지색 채점)
 custom_css = """
 <style>
 .stApp { background-color: #121212; }
@@ -16,7 +16,7 @@ custom_css = """
 }
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
 .match-txt { color: #ffffff; font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 15px; line-height: 1.4; }
-.stat-bg { background-color: #2a2a2a; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 14px; line-height: 1.6; }
+.stat-bg { background-color: #2a2a2a; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 14px; line-height: 1.6; text-align: center;}
 .predict-txt { 
     color: #00E676; 
     font-size: 16px; 
@@ -41,10 +41,10 @@ def translate_to_ko(text):
 
 def safe_num(value):
     if value is None or value == 'N/A': return 0
-    if isinstance(value, str): return float(value.replace('%', ''))
+    if isinstance(value, str): return float(value.replace('%', '').replace('+', '').replace('-', ''))
     return float(value)
 
-st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 사전 승부 예측 AI (베팅 전용)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 사전 승부 예측 AI (세이버메트릭스)</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
 st.sidebar.header("🔍 검색 설정")
@@ -74,7 +74,7 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
     new_html_list = []
     
     for idx, league_id in enumerate(selected_leagues):
-        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 사전 예측 데이터 수집 중...")
+        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 빅데이터 분석 중...")
         progress_bar.progress((idx) / total_leagues)
         
         querystring = {"league": league_id, "season": str(selected_date.year), "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
@@ -92,7 +92,7 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                 is_finished = status_short in ['FT', 'AET', 'PEN']
                 is_live = status_short in ['1H', 'HT', '2H', 'ET', 'P']
                 
-                # 시간 파싱
+                # 경기 시간 추출
                 match_date_raw = match['fixture']['date']
                 try: time_str = datetime.strptime(match_date_raw[:16], "%Y-%m-%dT%H:%M").strftime("%H:%M")
                 except: time_str = "시간미정"
@@ -109,68 +109,88 @@ if st.sidebar.button("🚀 베팅 데이터 불러오기"):
                 else:
                     match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 10px;'>VS</span> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[경기 시작 전]</div>"
 
-                # 💡 핵심: 경기 상태(시작 전/후) 상관없이 무조건 'Predictions API' 호출
+                # 💡 핵심: 축구 세이버메트릭스 (Predictions API) 전면 적용
                 pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
                 if not pred_res:
-                    continue # 예측 데이터가 아예 없는 비인기 경기는 제외
+                    continue
                 
-                pred_data = pred_res[0]['predictions']
+                pred_data = pred_res[0]
+                preds = pred_data['predictions']
+                comparison = pred_data['comparison']
                 
-                # 예측 승률 (%)
-                h_pct = safe_num(pred_data['percent']['home'])
-                a_pct = safe_num(pred_data['percent']['away'])
-                d_pct = safe_num(pred_data['percent']['draw'])
-                
-                h_stat_str = f"예상 승률: {h_pct}%"
-                a_stat_str = f"예상 승률: {a_pct}%"
-                
-                # AI 승패 예측
-                if h_pct > a_pct + 10 and h_pct > d_pct:
-                    pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 유력"
-                elif a_pct > h_pct + 10 and a_pct > d_pct:
-                    pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 유력"
-                else:
-                    pred_winner, win_pick = "draw", "🟡 무승부 (핸디캡 권장)"
+                # 1. 상세 전력 지표 비교 (폼, 공격력, 수비력)
+                form_h = comparison.get('form', {}).get('home', '50%')
+                form_a = comparison.get('form', {}).get('away', '50%')
+                att_h = comparison.get('att', {}).get('home', '50%')
+                att_a = comparison.get('att', {}).get('away', '50%')
+                def_h = comparison.get('def', {}).get('home', '50%')
+                def_a = comparison.get('def', {}).get('away', '50%')
 
-                # 경기 종료 후 적중 채점
+                # 중앙 회색 박스에 세이버메트릭스 데이터 출력
+                advanced_stats_html = f"""
+                <span style="color:#fff;">최근 전력(Form):</span> {home_kr} <b>{form_h}</b> vs <b>{form_a}</b> {away_kr}<br>
+                <span style="color:#fff;">공격력 지표:</span> {home_kr} <b>{att_h}</b> vs <b>{att_a}</b> {away_kr}<br>
+                <span style="color:#fff;">수비력 지표:</span> {home_kr} <b>{def_h}</b> vs <b>{def_a}</b> {away_kr}
+                """
+                
+                # 2. 가장 정확한 승률에 따른 승무패 예측 (단순 차이 무시, 가장 높은 확률 채택)
+                h_pct = safe_num(preds['percent']['home'])
+                a_pct = safe_num(preds['percent']['away'])
+                d_pct = safe_num(preds['percent']['draw'])
+                
+                # 최고 승률 팀 찾기
+                if h_pct > a_pct and h_pct > d_pct:
+                    pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 유력 ({h_pct}%)"
+                elif a_pct > h_pct and a_pct > d_pct:
+                    pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 유력 ({a_pct}%)"
+                else:
+                    pred_winner, win_pick = "draw", f"🟡 팽팽한 무승부 예상 ({d_pct}%)"
+
+                # 3. 경기 종료 후 적중 채점
                 if is_finished:
                     if h_goal > a_goal: actual_winner = "home"
                     elif a_goal > h_goal: actual_winner = "away"
                     else: actual_winner = "draw"
                     
-                    if actual_winner == pred_winner:
-                        win_pick += " <span style='color:#ff9800;'>(적중)</span>"
-                    else:
-                        win_pick += " <span style='color:#ff9800;'>(미적중)</span>"
+                    if actual_winner == pred_winner: win_pick += " <span style='color:#ff9800;'>(적중)</span>"
+                    else: win_pick += " <span style='color:#ff9800;'>(미적중)</span>"
                         
-                # 조언 및 언더오버 (사전 예측 API 데이터 활용)
-                advice = pred_data.get('advice', '데이터 분석 중')
-                translated_advice = translate_to_ko(advice) # 해외 전문가 코멘트 번역
-                control_pick = f"💡 분석 코멘트: {translated_advice}"
+                # 4. 분석 코멘트
+                advice = preds.get('advice', '데이터 분석 중')
+                translated_advice = translate_to_ko(advice)
+                control_pick = f"💡 AI 분석 코멘트: {translated_advice}"
                 
-                under_over_val = pred_data.get('under_over', '')
-                over_under = f"🔥 예상 골 기준점: {under_over_val}" if under_over_val else "⚖️ 득점 데이터 팽팽"
+                # 5. 오버/언더 완벽 패치 (텍스트 변환)
+                under_over_val = preds.get('under_over', '')
+                if under_over_val:
+                    # '-2.5' 이면 언더, '+2.5' 이면 오버로 한글화
+                    uo_text = "언더 (저득점)" if "-" in under_over_val else "오버 (다득점)"
+                    clean_val = under_over_val.replace('-', '').replace('+', '')
+                    over_under = f"📊 기준점 {clean_val} {uo_text}"
+                else:
+                    over_under = "📊 언더/오버 기준점 미제공"
 
                 new_html_list.append({
                     "league": top_league_display,
                     "match_display": match_display,
-                    "h_kr": home_kr, "a_kr": away_kr,
-                    "h_stat_str": h_stat_str, "a_stat_str": a_stat_str,
-                    "win_pick": win_pick, "control_pick": control_pick, "over_under": over_under
+                    "advanced_stats": advanced_stats_html,
+                    "win_pick": win_pick, 
+                    "control_pick": control_pick, 
+                    "over_under": over_under
                 })
         except:
             pass
 
     progress_bar.progress(1.0)
-    status_text.text("✅ 사전 배팅 분석 완료!")
+    status_text.text("✅ 빅데이터 분석 완료!")
     time.sleep(1)
     status_text.empty()
     progress_bar.empty()
 
     st.session_state['analyzed_html_list'] = new_html_list
 
-# 화면 출력
+# 화면 출력 (모든 예측 텍스트가 초록색으로 렌더링 됨)
 if st.session_state['analyzed_html_list']:
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_html_list']):
@@ -180,13 +200,12 @@ if st.session_state['analyzed_html_list']:
                 <div class="league-txt">{data['league']}</div>
                 <div class="match-txt">{data['match_display']}</div>
                 <div class="stat-bg">
-                    <b style="color:#fff;">{data['h_kr']}</b> : {data['h_stat_str']}<br>
-                    <b style="color:#fff;">{data['a_kr']}</b> : {data['a_stat_str']}
+                    {data['advanced_stats']}
                 </div>
                 <div class="predict-txt">
                     🎯 {data['win_pick']}<br>
                     ⚔️ {data['control_pick']}<br>
-                    📊 {data['over_under']}
+                    {data['over_under']}
                 </div>
             </div>
             """, unsafe_allow_html=True)
