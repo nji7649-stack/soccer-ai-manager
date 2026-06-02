@@ -10,7 +10,6 @@ st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wi
 # 🎨 2. 다크 모드 카드 및 전술판 고정 CSS
 custom_css = """
 <style>
-    /* 전체 배경 및 카드 디자인 */
     .stApp { background-color: #121212; }
     .card-box {
         background-color: #1e1e1e; padding: 20px; border-radius: 10px;
@@ -21,7 +20,7 @@ custom_css = """
     .stat-bg { background-color: #2a2a2a; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 14px; line-height: 1.6; }
     .predict-txt { color: #00E676; font-size: 15px; font-weight: bold; text-align: center; border-top: 1px dashed #555; padding-top: 10px; margin-top: 10px; }
 
-    /* 💡 다크 모드 전술판 크기 고정 (100% 비율 적용으로 깨짐 방지) */
+    /* 다크 모드 전술판 크기 고정 */
     .tactical-board {
         background-color: #0a0a0a; border: 2px solid #333; border-radius: 8px;
         width: 100%; height: 350px; margin: 0 auto 10px auto;
@@ -42,7 +41,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 API_KEY = st.secrets["FOOTBALL_API_KEY"]
 HEADERS = {'x-apisports-key': API_KEY}
 
-# 번역 캐시
+# 팀 이름만 번역 (캐시 사용으로 속도 향상)
 @st.cache_data(show_spinner=False)
 def translate_to_ko(text):
     try: return GoogleTranslator(source='en', target='ko').translate(text)
@@ -53,7 +52,7 @@ def safe_num(value):
     if isinstance(value, str): return float(value.replace('%', ''))
     return float(value)
 
-# 💡 선발 라인업 한글화 + 다크 모드 작전판 생성 함수
+# 💡 선수 이름은 영문 유지 (구글 번역 과부하 무한로딩 방지)
 def draw_dark_tactical_board(team_name, lineup_info):
     if not lineup_info or 'startXI' not in lineup_info:
         return f"<div style='text-align:center; color:#888; padding:10px;'>{team_name} 명단 미발표</div>"
@@ -65,12 +64,12 @@ def draw_dark_tactical_board(team_name, lineup_info):
     for p in startXI:
         grid = p.get('player', {}).get('grid', '1:1')
         name = p.get('player', {}).get('name', 'Unknown')
-        short_name = name.split()[-1][:8]
-        ko_name = translate_to_ko(short_name)
+        # 영문 성씨만 추출 (최대 8글자 제한)
+        short_name = name.split()[-1][:8] 
         
         row_idx = int(grid.split(':')[0]) if grid else 0
         if row_idx not in rows: rows[row_idx] = []
-        rows[row_idx].append((ko_name[0] if ko_name else "X", ko_name))
+        rows[row_idx].append((short_name[0] if short_name else "X", short_name))
         
     board_html = f"<div style='text-align:center; color: #aaa; font-weight: bold; margin-bottom: 5px; font-size:13px;'>{team_name} <span style='color:#fff;'>({formation})</span></div>"
     board_html += "<div class='tactical-board'>"
@@ -89,7 +88,6 @@ def draw_dark_tactical_board(team_name, lineup_info):
     board_html += "</div>"
     return board_html
 
-# 💡 AI 승부 예측 적중 여부 채점
 def check_win(h_goal, a_goal, pred_winner):
     if h_goal > a_goal: actual = "home"
     elif a_goal > h_goal: actual = "away"
@@ -112,7 +110,6 @@ LEAGUE_MAP = {
 
 selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["39", "140", "292"])
 
-# 메모리(세션 상태) 초기화
 if 'analyzed_html_list' not in st.session_state:
     st.session_state['analyzed_html_list'] = []
 
@@ -129,7 +126,7 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
     new_html_list = []
     
     for idx, league_id in enumerate(selected_leagues):
-        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 분석 및 한글화 중... ({idx+1}/{total_leagues})")
+        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 분석 중... ({idx+1}/{total_leagues})")
         progress_bar.progress((idx) / total_leagues)
         
         querystring = {"league": league_id, "season": str(selected_date.year), "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
@@ -140,6 +137,7 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
             
             for match in fixtures:
                 fix_id = str(match['fixture']['id'])
+                # 팀 이름만 번역하여 과부하 방지
                 home_kr = translate_to_ko(match['teams']['home']['name'])
                 away_kr = translate_to_ko(match['teams']['away']['name'])
                 
@@ -169,7 +167,6 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                 else:
                     pred_winner, win_pick = "draw", "🟡 무승부 접전"
 
-                # 종료된 경기 스코어 및 채점 표시
                 if is_finished:
                     h_goal = match['goals']['home']
                     a_goal = match['goals']['away']
@@ -183,11 +180,10 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
                 total_shots = h_shot + a_shot
                 over_under = "🔥 오버(다득점)" if total_shots >= 9 else ("❄️ 언더(저득점)" if total_shots <= 5 else "⚖️ 언오버 팽팽")
 
-                # 작전판 생성
+                # 초고속 영문 전술판 렌더링
                 h_pitch = draw_dark_tactical_board(home_kr, lineup_data[0] if lineup_data else None)
                 a_pitch = draw_dark_tactical_board(away_kr, lineup_data[1] if lineup_data and len(lineup_data)>1 else None)
 
-                # 개별 카드 딕셔너리로 저장
                 new_html_list.append({
                     "league": LEAGUE_MAP[league_id],
                     "match_display": match_display,
@@ -200,19 +196,18 @@ if st.sidebar.button("🚀 데이터 불러오기 및 AI 분석"):
             pass
 
     progress_bar.progress(1.0)
-    status_text.text("✅ 분석 완료!")
+    status_text.text("✅ 초고속 분석 완료!")
     time.sleep(1)
     status_text.empty()
     progress_bar.empty()
 
     st.session_state['analyzed_html_list'] = new_html_list
 
-# 💡 3. 메모리에 저장된 데이터로 화면에 카드 그리기 (스트림릿 열(Column) 렌더링 강제 적용)
+# 화면 출력 로직
 if st.session_state['analyzed_html_list']:
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_html_list']):
         with cols[idx % 3]:
-            # 카드 껍데기
             st.markdown(f"""
             <div class="card-box">
                 <div class="league-txt">{data['league']}</div>
@@ -230,10 +225,8 @@ if st.session_state['analyzed_html_list']:
             </div>
             """, unsafe_allow_html=True)
             
-            # 🚨 스트림릿 네이티브 기능으로 작전판 접기/펴기 메뉴 생성 (절대 안 깨짐)
             with st.expander("▶ 다크모드 전술판 및 라인업"):
                 st.markdown(data['h_pitch'], unsafe_allow_html=True)
                 st.markdown(data['a_pitch'], unsafe_allow_html=True)
 elif st.session_state['analyzed_html_list'] == []:
-    # 검색 후 빈 배열일 경우
     st.markdown("")
