@@ -2,78 +2,102 @@ import os
 import requests
 from datetime import datetime, timedelta
 
+# 숫자로 안전하게 변환해주는 마법의 헬퍼 함수
+def safe_num(value):
+    if value is None or value == 'N/A':
+        return 0
+    if isinstance(value, str):
+        return float(value.replace('%', ''))
+    return float(value)
+
 def run_pro_analysis():
-    # 깃허브 금고에서 열쇠 꺼내기
     api_key = os.environ.get('FOOTBALL_API_KEY')
     headers = {'x-apisports-key': api_key}
 
-    # 한국 시간 기준 '오늘' 날짜 자동 추적
+    # 한국 시간 기준 오늘 날짜 (Pro 플랜이므로 오늘 실시간 데이터 억세스!)
     kst_now = datetime.utcnow() + timedelta(hours=9)
     date_string = kst_now.strftime('%Y-%m-%d')
-    season = kst_now.strftime('%Y') # 2026 등 자동 인식
+    season = kst_now.strftime('%Y')
 
     print(f"=========================================")
-    print(f"🏆 [축구 AI 분석실 v3.0] PRO 플랜 가동 중")
+    print(f"🏆 [축구 AI 분석실 v4.0] 3-in-1 통합 예측 엔진 가동")
     print(f"👉 분석 날짜: {date_string} (KST)")
     print(f"=========================================\n")
 
-    # 분석할 리그 ID 모음 (1: 월드컵, 10: A매치 친선, 39: 프리미어리그, 66: 기타 친선 등)
-    # Pro 플랜이므로 원하는 리그를 마음껏 추가하실 수 있습니다.
     target_leagues = ["1", "10", "39", "66"]  
-    
     url = "https://v3.football.api-sports.io/fixtures"
     total_matches_found = 0
     
     for league_id in target_leagues:
-        querystring = {
-            "league": league_id,
-            "season": season,
-            "date": date_string,
-            "timezone": "Asia/Seoul"
-        }
+        querystring = {"league": league_id, "season": season, "date": date_string, "timezone": "Asia/Seoul"}
         
         try:
             response = requests.get(url, headers=headers, params=querystring, timeout=10)
-            data = response.json()
-            
-            if 'errors' in data and data['errors']:
-                continue # 에러나면 조용히 다음 리그로 패스
-
-            fixtures = data.get('response', [])
-            if not fixtures:
-                continue # 해당 리그에 오늘 경기가 없으면 패스
+            fixtures = response.json().get('response', [])
+            if not fixtures: continue
 
             total_matches_found += len(fixtures)
-            print(f"\n✅ [리그 ID: {league_id}] {len(fixtures)}경기 분석 시작!")
+            print(f"\n✅ [리그 ID: {league_id}] {len(fixtures)}경기 인공지능 분석 시작!\n")
 
             for match in fixtures:
                 fixture_id = match['fixture']['id']
-                home = match['teams']['home']['name']
-                away = match['teams']['away']['name']
-                status = match['fixture']['status']['long']
+                home_team = match['teams']['home']['name']
+                away_team = match['teams']['away']['name']
+                status = match['fixture']['status']['short']
 
-                print(f"🔥 매치업: {home} vs {away} [{status}]")
-
-                # PRO 전용 정밀 스탯 추출
                 stats_url = "https://v3.football.api-sports.io/fixtures/statistics"
                 stats_res = requests.get(stats_url, headers=headers, params={"fixture": fixture_id})
                 stats_data = stats_res.json().get('response', [])
 
-                if not stats_data:
-                    print("  ⚠️ 경기 전이거나 세부 스탯 대기 중입니다.")
+                if not stats_data or len(stats_data) < 2:
+                    print(f"⚽ {home_team} vs {away_team} [{status}] -> ⚠️ 분석 대기 중 (데이터 부족)")
                     continue
 
-                print("  📊 [핵심 전력 지표]")
-                for team_stat in stats_data:
-                    team_name = team_stat['team']['name']
-                    statistics = team_stat['statistics']
+                # 양 팀 데이터 추출
+                home_stats = stats_data[0]['statistics']
+                away_stats = stats_data[1]['statistics']
 
-                    possession = next((item['value'] for item in statistics if item['type'] == 'Ball Possession'), 'N/A')
-                    passes = next((item['value'] for item in statistics if item['type'] == 'Passes %'), 'N/A')
-                    shots_on_goal = next((item['value'] for item in statistics if item['type'] == 'Shots on Goal'), 'N/A')
+                h_poss = safe_num(next((item['value'] for item in home_stats if item['type'] == 'Ball Possession'), 0))
+                h_pass = safe_num(next((item['value'] for item in home_stats if item['type'] == 'Passes %'), 0))
+                h_shot = safe_num(next((item['value'] for item in home_stats if item['type'] == 'Shots on Goal'), 0))
 
-                    print(f"  [{team_name}] 점유율: {possession} | 패스성공률: {passes} | 유효슈팅: {shots_on_goal}")
-                print("-" * 40)
+                a_poss = safe_num(next((item['value'] for item in away_stats if item['type'] == 'Ball Possession'), 0))
+                a_pass = safe_num(next((item['value'] for item in away_stats if item['type'] == 'Passes %'), 0))
+                a_shot = safe_num(next((item['value'] for item in away_stats if item['type'] == 'Shots on Goal'), 0))
+
+                print(f"⚽ 매치업: {home_team} vs {away_team} [{status}]")
+                print(f"   📊 [데이터] {home_team} (점유율 {h_poss}% / 슈팅 {h_shot}개) vs {away_team} (점유율 {a_poss}% / 슈팅 {a_shot}개)")
+
+                # 💡 [모델 1] 승무패 예측 (점유율 0.1점, 유효슈팅 1.5점 가중치)
+                h_score = (h_poss * 0.1) + (h_shot * 1.5)
+                a_score = (a_poss * 0.1) + (a_shot * 1.5)
+                
+                if h_score > a_score + 2.5:
+                    win_pick = f"[{home_team} 우세 📈]"
+                elif a_score > h_score + 2.5:
+                    win_pick = f"[{away_team} 우세 📈]"
+                else:
+                    win_pick = "[무승부 접전 ⚖️]"
+
+                # 💡 [모델 2] 주도권(수비) 예측
+                if h_poss > a_poss + 15:
+                    control_pick = f"{home_team}의 일방적 경기 지배"
+                elif a_poss > h_poss + 15:
+                    control_pick = f"{away_team}의 일방적 경기 지배"
+                else:
+                    control_pick = "치열한 중원 싸움"
+
+                # 💡 [모델 3] 언오버 예측 (유효슈팅 합산 기준)
+                total_shots = h_shot + a_shot
+                if total_shots >= 9:
+                    over_under = "🔥 오버(다득점) 페이스"
+                elif total_shots <= 5:
+                    over_under = "🛡️ 언더(저득점) 페이스"
+                else:
+                    over_under = "⚖️ 예측 불가 (변수 큼)"
+
+                print(f"   🤖 [AI 예측] {win_pick} | 주도권: {control_pick} | 흐름: {over_under}")
+                print("-" * 50)
 
         except Exception as e:
             print(f"통신 에러 발생: {e}")
