@@ -247,15 +247,16 @@ if analyze_button:
                 is_finished = status_short in ['FT', 'AET', 'PEN']
                 is_live = status_short in ['1H', 'HT', '2H', 'ET', 'P']
                 
-                # 💡 핵심: 진행 중인 경기 시간(분) 가져오기 로직 추가
                 elapsed_time = match['fixture']['status'].get('elapsed', '')
                 
                 try: match_time = datetime.strptime(match['fixture']['date'][:16], "%Y-%m-%dT%H:%M").strftime("%H:%M")
                 except: match_time = "시간미정"
                 
-                # 💡 핵심: 진행 중일 경우 리그명 밑에 [🔴 진행중: OO분] 표시
+                # 💡 핵심: 기호 빼고 깔끔하게 텍스트로만 상태 표시
                 if is_live and elapsed_time:
-                    top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252; font-size:12px;'>[🔴 진행중: {elapsed_time}분]</span>"
+                    top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252; font-size:12px;'>[진행중: {elapsed_time}분]</span>"
+                elif is_finished:
+                    top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa; font-size:12px;'>[경기 종료]</span>"
                 else:
                     top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time})"
                 
