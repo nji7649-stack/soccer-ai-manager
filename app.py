@@ -9,34 +9,37 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 모든 카드의 높이를 550px로 강제 고정하여 깔끔하게 정렬
+# 🎨 UI CSS: 카드 내부 간격 쫀쫀하게 조절
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 .stApp { background-color: #0e1117; }
 
-/* 💡 핵심: 카드 박스 높이를 550px로 강제 고정하여 들쭉날쭉한 현상 완벽 해결 */
 .card-box {
-    background-color: #1e1e1e; padding: 20px; border-radius: 12px;
+    background-color: #1e1e1e; padding: 15px 20px; border-radius: 12px; /* 위아래 패딩 약간 축소 */
     border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px;
-    display: flex; flex-direction: column; justify-content: space-between; 
-    height: 550px; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-start; /* 간격 벌어짐 방지 */
+    height: 520px; overflow: hidden;
 }
-.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
-.match-txt { color: #ffffff; font-size: 19px; font-weight: bold; text-align: center; margin-bottom: 8px; line-height: 1.3; }
+.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
+.match-txt { color: #ffffff; font-size: 19px; font-weight: bold; text-align: center; margin-bottom: 5px; line-height: 1.3; }
 .referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 15px; }
-.stat-bg { background-color: #262730; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 13.5px; line-height: 1.7; text-align: center; margin-bottom: 10px; border: 1px solid #444;}
-.predict-txt { font-size: 15px; font-weight: bold; text-align: center; border-top: 1px dashed #555; padding-top: 15px; line-height: 1.6; }
 
-.ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; height: 35px; }
-.over-under { font-size: 13px; color: #ddd; font-weight: normal; margin-top: 4px; }
+/* 💡 스탯 박스 마진 축소 */
+.stat-bg { background-color: #262730; padding: 12px; border-radius: 8px; color: #eeeeee; font-size: 13px; line-height: 1.6; text-align: center; margin-bottom: 15px; border: 1px solid #444; }
 
-.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 5px; margin-bottom: 15px; background-color: #333; }
+/* 💡 하단 예측 결과 텍스트 모음 */
+.predict-section { margin-top: auto; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }
+.predict-txt { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
+.over-under { font-size: 13px; color: #ddd; font-weight: normal; margin-bottom: 8px; }
+.ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; height: 32px; }
+
+.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 2px; margin-bottom: 10px; background-color: #333; }
 .prob-home { background-color: #4FC3F7; height: 100%; }
 .prob-draw { background-color: #ff9800; height: 100%; }
 .prob-away { background-color: #EF5350; height: 100%; }
-.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 3px; }
+.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 2px; }
 
 .table-wrapper { overflow-x: auto; margin-top: 10px; }
 .detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; }
@@ -46,29 +49,15 @@ custom_css = """
 
 /* 사이드바 원형 다크 아이콘 탭 */
 [data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
-[data-testid="stSidebar"] div[role="radiogroup"] {
-    display: flex !important; flex-direction: row !important; justify-content: space-between !important;
-    gap: 5px !important; width: 100% !important; margin-bottom: 10px;
-}
-[data-testid="stSidebar"] div[role="radiogroup"] label {
-    flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important;
-    justify-content: center !important; background: transparent !important; border: none !important;
-    padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important;
-}
-[data-testid="stSidebar"] div[role="radiogroup"] label::before {
-    font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 22px; color: #ffffff; background-color: #151515;
-    width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    margin-bottom: 8px; transition: all 0.3s ease; border: 2px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-}
+[data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }
+[data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 22px; color: #ffffff; background-color: #151515; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: all 0.3s ease; border: 2px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
 [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } 
 [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } 
 [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } 
 [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } 
 [data-testid="stSidebar"] div[role="radiogroup"] label:hover::before { border-color: #666; transform: translateY(-2px); }
-[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before {
-    border-color: #00E676 !important; color: #00E676 !important; background-color: #151515 !important;
-    box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important;
-}
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before { border-color: #00E676 !important; color: #00E676 !important; background-color: #151515 !important; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
 </style>
@@ -84,9 +73,7 @@ HEADERS = {'x-apisports-key': FOOTBALL_API_KEY}
 @st.cache_data(show_spinner=False)
 def translate_to_ko(text):
     if not text or str(text).strip() in ['', 'N/A']: return '데이터 분석 중'
-    try: 
-        safe_txt = str(text).replace('<', '').replace('>', '')
-        return GoogleTranslator(source='en', target='ko').translate(safe_txt)
+    try: return GoogleTranslator(source='en', target='ko').translate(str(text).replace('<', '').replace('>', ''))
     except: return str(text)
 
 def safe_num(value):
@@ -103,7 +90,6 @@ def fetch_custom_team_stats(team_id, season_year):
         res = requests.get(url, headers=HEADERS, params={"team": team_id, "last": 5, "season": season_year}).json()
         fixtures = res.get('response', [])
         if not fixtures: return 10, 10, 10 
-        
         wins, goals_for, goals_against = 0, 0, 0
         for match in fixtures:
             is_home = match['teams']['home']['id'] == team_id
@@ -121,19 +107,13 @@ def fetch_custom_team_stats(team_id, season_year):
 def get_football_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals, a_goals, h_goals_against, a_goals_against, h_injuries, a_injuries):
     h_inj_html = "".join([f"<span class='injury-tag'>🚑 {inj}</span>" for inj in h_injuries]) or "<span style='color:#888;'>결장자 없음</span>"
     a_inj_html = "".join([f"<span class='injury-tag'>🚑 {inj}</span>" for inj in a_injuries]) or "<span style='color:#888;'>결장자 없음</span>"
-    
-    html = f"""
-    <div class='table-wrapper'>
-        <table class='detail-table'>
-            <tr><th style='color:#4FC3F7; width:40%;'>{home_kr}</th><th style='width:20%; color:#aaa;'>비교 지표</th><th style='color:#EF5350; width:40%;'>{away_kr}</th></tr>
-            <tr><td><b>{h_rank}</b>위</td><td style='font-size:11px;'>리그 순위</td><td><b>{a_rank}</b>위</td></tr>
-            <tr><td>{h_goals}골</td><td style='font-size:11px;'>평균 득점</td><td>{a_goals}골</td></tr>
-            <tr><td>{h_goals_against}골</td><td style='font-size:11px;'>평균 실점</td><td>{a_goals_against}골</td></tr>
-            <tr><td style='white-space:normal;'>{h_inj_html}</td><td style='font-size:11px;'>결장/부상</td><td style='white-space:normal;'>{a_inj_html}</td></tr>
-        </table>
-    </div>
-    """
-    return html
+    return f"""<div class='table-wrapper'><table class='detail-table'>
+        <tr><th style='color:#4FC3F7; width:40%;'>{home_kr}</th><th style='width:20%; color:#aaa;'>비교 지표</th><th style='color:#EF5350; width:40%;'>{away_kr}</th></tr>
+        <tr><td><b>{h_rank}</b>위</td><td style='font-size:11px;'>리그 순위</td><td><b>{a_rank}</b>위</td></tr>
+        <tr><td>{h_goals}골</td><td style='font-size:11px;'>평균 득점</td><td>{a_goals}골</td></tr>
+        <tr><td>{h_goals_against}골</td><td style='font-size:11px;'>평균 실점</td><td>{a_goals_against}골</td></tr>
+        <tr><td style='white-space:normal;'>{h_inj_html}</td><td style='font-size:11px;'>결장/부상</td><td style='white-space:normal;'>{a_inj_html}</td></tr>
+    </table></div>"""
 
 def get_lineup_table(home_kr, away_kr, lineup_data):
     if not lineup_data or len(lineup_data) < 2: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표</div>"
@@ -141,8 +121,7 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
     a_p = [p['player']['name'].split()[-1] for p in lineup_data[1].get('startXI', [])]
     m_len = max(len(h_p), len(a_p))
     h_p += [""] * (m_len - len(h_p)); a_p += [""] * (m_len - len(a_p))
-    html = "<div class='table-wrapper'><table class='detail-table'>"
-    html += f"<tr><th style='color:#4FC3F7;'>{home_kr} (선발)</th><th style='color:#EF5350;'>{away_kr} (선발)</th></tr>"
+    html = "<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{home} (선발)</th><th style='color:#EF5350;'>{away} (선발)</th></tr>".format(home=home_kr, away=away_kr)
     for h, a in zip(h_p, a_p): html += f"<tr><td>{h}</td><td>{a}</td></tr>"
     html += "</table></div>"
     return html
@@ -151,11 +130,7 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '종합전력']
     size = 220; center = size / 2; max_val = 100
     def get_poly(vals, bc, fc):
-        pts = []
-        for i, val in enumerate(vals):
-            ang = (math.pi * 2 / 6) * i - (math.pi / 2)
-            r = (val / max_val) * (size * 0.35)
-            pts.append(f"{center + r * math.cos(ang)},{center + r * math.sin(ang)}")
+        pts = [f"{center + (v/max_val)*(size*0.35)*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (v/max_val)*(size*0.35)*math.sin((math.pi*2/6)*i - math.pi/2)}" for i, v in enumerate(vals)]
         return f"<polygon points='{' '.join(pts)}' style='fill:{fc}; stroke:{bc}; stroke-width:2; opacity:0.6;' />"
     svg = ""
     for i in range(6):
@@ -166,13 +141,10 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
         anchor = "start" if lx > center + 10 else ("end" if lx < center - 10 else "middle")
         svg += f"<text x='{lx}' y='{ly+4}' fill='#ddd' font-size='10' font-weight='bold' text-anchor='{anchor}'>{labels[i]}</text>"
     for ratio in [0.33, 0.66, 1.0]:
-        r = (size * 0.35) * ratio
-        pts = [f"{center + r * math.cos((math.pi*2/6)*i - math.pi/2)},{center + r * math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)]
+        pts = [f"{center + (size*0.35)*ratio*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (size*0.35)*ratio*math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)]
         svg += f"<polygon points='{' '.join(pts)}' style='fill:none; stroke:#333; stroke-width:1;' />"
-    h_poly = get_poly(h_vals, "#4FC3F7", "rgba(79, 195, 247, 0.3)") 
-    a_poly = get_poly(a_vals, "#EF5350", "rgba(239, 83, 80, 0.3)") 
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 데이터 연산</div>" if is_custom else ""
-    return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
+    return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{get_poly(h_vals, '#4FC3F7', 'rgba(79, 195, 247, 0.3)')}{get_poly(a_vals, '#EF5350', 'rgba(239, 83, 80, 0.3)')}</svg></div>"
 
 # ==========================================
 # ⚾ 야구(MLB) 전용 함수
@@ -191,108 +163,79 @@ MLB_PARK_FACTORS = {
 @st.cache_data(ttl=3600)
 def load_mlb_all_data():
     try:
-        hitter_url = "https://statsapi.mlb.com/api/v1/stats?stats=season&group=hitting&gameType=R&season=2026&playerPool=ALL&limit=1500"
-        h_splits = requests.get(hitter_url).json()['stats'][0]['splits']
-        hitter_list = [{'이름': r['player']['fullName'], '팀': r['team']['name'], '타수': r['stat'].get('atBats', 0), 'OPS': r['stat'].get('ops', '.000')} for r in h_splits]
-        df_h = pd.DataFrame(hitter_list)
+        h_splits = requests.get("https://statsapi.mlb.com/api/v1/stats?stats=season&group=hitting&gameType=R&season=2026&playerPool=ALL&limit=1500").json()['stats'][0]['splits']
+        df_h = pd.DataFrame([{'이름': r['player']['fullName'], '팀': r['team']['name'], '타수': r['stat'].get('atBats', 0), 'OPS': r['stat'].get('ops', '.000')} for r in h_splits])
         df_h['OPS'] = pd.to_numeric(df_h['OPS'], errors='coerce').fillna(0.0)
         df_h['타수'] = pd.to_numeric(df_h['타수'], errors='coerce').fillna(0)
         
-        pitcher_url = "https://statsapi.mlb.com/api/v1/stats?stats=season&group=pitching&gameType=R&season=2026&playerPool=ALL&limit=1500"
-        p_splits = requests.get(pitcher_url).json()['stats'][0]['splits']
-        pitcher_list = [{'이름': r['player']['fullName'], '팀': r['team']['name'], '출장': r['stat'].get('gamesPlayed', 0), '선발': r['stat'].get('gamesStarted', 0), '이닝': r['stat'].get('inningsPitched', '0.0'), '피홈런': r['stat'].get('homeRuns', 0), '볼넷': r['stat'].get('baseOnBalls', 0), '탈삼진': r['stat'].get('strikeOuts', 0)} for r in p_splits]
-        df_p = pd.DataFrame(pitcher_list)
+        p_splits = requests.get("https://statsapi.mlb.com/api/v1/stats?stats=season&group=pitching&gameType=R&season=2026&playerPool=ALL&limit=1500").json()['stats'][0]['splits']
+        df_p = pd.DataFrame([{'이름': r['player']['fullName'], '팀': r['team']['name'], '출장': r['stat'].get('gamesPlayed', 0), '선발': r['stat'].get('gamesStarted', 0), '이닝': r['stat'].get('inningsPitched', '0.0'), '피홈런': r['stat'].get('homeRuns', 0), '볼넷': r['stat'].get('baseOnBalls', 0), '탈삼진': r['stat'].get('strikeOuts', 0)} for r in p_splits])
         df_p['이닝_num'] = pd.to_numeric(df_p['이닝'], errors='coerce').fillna(0.0)
         df_p['평균이닝'] = df_p.apply(lambda x: x['이닝_num'] / x['선발'] if x['선발'] > 0 else 4.0, axis=1).clip(3.0, 7.5)
         df_p['FIP'] = df_p.apply(lambda x: ((13*x['피홈런'] + 3*x['볼넷'] - 2*x['탈삼진']) / x['이닝_num']) + 3.10 if x['이닝_num'] > 0 else 4.50, axis=1)
         
-        df_bullpen = df_p[(df_p['출장'] > df_p['선발']) & (df_p['이닝_num'] >= 5.0)]
-        team_bullpen_fip = df_bullpen.groupby('팀')['FIP'].mean().to_dict()
+        team_bullpen_fip = df_p[(df_p['출장'] > df_p['선발']) & (df_p['이닝_num'] >= 5.0)].groupby('팀')['FIP'].mean().to_dict()
         return df_h, df_p, team_bullpen_fip
     except: return pd.DataFrame(), pd.DataFrame(), {}
 
 @st.cache_data(ttl=3600)
 def load_mlb_team_momentum():
-    url = "https://statsapi.mlb.com/api/v1/standings?leagueId=103,104"
     try:
-        res = requests.get(url, timeout=5).json()
+        res = requests.get("https://statsapi.mlb.com/api/v1/standings?leagueId=103,104", timeout=5).json()
         l10_dict = {}
         for record in res.get('records', []):
             for team in record.get('teamRecords', []):
-                name = team['team']['name']
-                splits = team.get('records', {}).get('splitRecords', [])
-                l10_win_rate = 0.5
-                for split in splits:
+                for split in team.get('records', {}).get('splitRecords', []):
                     if split['type'] == 'lastTen':
-                        if (split['wins'] + split['losses']) > 0: l10_win_rate = split['wins'] / (split['wins'] + split['losses'])
-                        break
-                l10_dict[name] = l10_win_rate
+                        l10_dict[team['team']['name']] = split['wins'] / (split['wins'] + split['losses']) if (split['wins'] + split['losses']) > 0 else 0.5
         return l10_dict
     except: return {}
 
 def load_mlb_live_lineup(game_pk):
     try:
-        url = f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore"
-        res = requests.get(url).json()
-        home_order = res['teams']['home'].get('battingOrder', [])
-        away_order = res['teams']['away'].get('battingOrder', [])
-        h_players = res['teams']['home']['players']
-        a_players = res['teams']['away']['players']
-        h_lookup = {p['person']['id']: p['person']['fullName'] for k, p in h_players.items() if 'person' in p}
-        a_lookup = {p['person']['id']: p['person']['fullName'] for k, p in a_players.items() if 'person' in p}
-        return [h_lookup.get(pid, 'Unknown') for pid in home_order], [a_lookup.get(pid, 'Unknown') for pid in away_order]
+        res = requests.get(f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore").json()
+        h_lookup = {p['person']['id']: p['person']['fullName'] for k, p in res['teams']['home']['players'].items() if 'person' in p}
+        a_lookup = {p['person']['id']: p['person']['fullName'] for k, p in res['teams']['away']['players'].items() if 'person' in p}
+        return [h_lookup.get(pid, 'Unknown') for pid in res['teams']['home'].get('battingOrder', [])], [a_lookup.get(pid, 'Unknown') for pid in res['teams']['away'].get('battingOrder', [])]
     except: return [], []
 
 def run_mlb_simulation(h_fip, a_fip, h_avg_ip, a_avg_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, h_momentum, a_momentum, park_factor, num_sims=5000):
-    h_starter_weight = h_avg_ip / 9.0
-    a_starter_weight = a_avg_ip / 9.0
-    h_eff_fip = (h_fip * h_starter_weight) + (h_bp_fip * (1 - h_starter_weight))
-    a_eff_fip = (a_fip * a_starter_weight) + (a_bp_fip * (1 - a_starter_weight))
-    h_attack = (h_ops / 0.720) * h_momentum if h_ops > 0 else 1.0 * h_momentum
-    a_attack = (a_ops / 0.720) * a_momentum if a_ops > 0 else 1.0 * a_momentum
-    h_expected_runs = ((a_eff_fip * h_attack) + 0.2) * park_factor
-    a_expected_runs = (h_eff_fip * a_attack) * park_factor
-    
+    h_starter_w = h_avg_ip / 9.0; a_starter_w = a_avg_ip / 9.0
+    h_eff_fip = (h_fip * h_starter_w) + (h_bp_fip * (1 - h_starter_w))
+    a_eff_fip = (a_fip * a_starter_w) + (a_bp_fip * (1 - a_starter_w))
+    h_expected_runs = ((a_eff_fip * ((h_ops / 0.720) * h_momentum if h_ops > 0 else 1.0 * h_momentum)) + 0.2) * park_factor
+    a_expected_runs = (h_eff_fip * ((a_ops / 0.720) * a_momentum if a_ops > 0 else 1.0 * a_momentum)) * park_factor
     h_wins, a_wins = 0, 0
     h_tie_win_prob = h_expected_runs / (h_expected_runs + a_expected_runs) if (h_expected_runs + a_expected_runs) > 0 else 0.5
     for _ in range(num_sims):
         h_score = max(0, int(random.gauss(h_expected_runs, 2.3)))
         a_score = max(0, int(random.gauss(a_expected_runs, 2.3)))
-        if h_score == a_score:
-            if random.random() < h_tie_win_prob: h_score += 1
-            else: a_score += 1
+        if h_score == a_score: h_score += 1 if random.random() < h_tie_win_prob else (a_score + 1)
         if h_score > a_score: h_wins += 1
         elif a_score > h_score: a_wins += 1
     return (h_wins / num_sims) * 100, (a_wins / num_sims) * 100, h_expected_runs, a_expected_runs
 
 def get_baseball_detailed_html(home_team, away_team, h_p, a_p, h_s_fip, a_s_fip, h_bp_fip, a_bp_fip, h_ops, a_ops, h_ip, a_ip):
-    return f"""
-    <div class='table-wrapper'>
-        <table class='detail-table'>
-            <tr><th style='color:#4FC3F7; width:40%;'>{home_team}</th><th style='width:20%; color:#aaa;'>투타 지표</th><th style='color:#EF5350; width:40%;'>{away_team}</th></tr>
-            <tr><td><b>{h_p}</b> <span style='font-size:11px; color:#888;'>({h_ip:.1f}이닝)</span></td><td style='font-size:11px;'>선발 투수</td><td><b>{a_p}</b> <span style='font-size:11px; color:#888;'>({a_ip:.1f}이닝)</span></td></tr>
-            <tr><td>{h_s_fip:.2f}</td><td style='font-size:11px;'>선발 FIP</td><td>{a_s_fip:.2f}</td></tr>
-            <tr><td>{h_bp_fip:.2f}</td><td style='font-size:11px;'>불펜 FIP</td><td>{a_bp_fip:.2f}</td></tr>
-            <tr><td>{h_ops:.3f}</td><td style='font-size:11px;'>타선 OPS</td><td>{a_ops:.3f}</td></tr>
-        </table>
-    </div>
-    """
+    return f"""<div class='table-wrapper'><table class='detail-table'>
+        <tr><th style='color:#4FC3F7; width:40%;'>{home_team}</th><th style='width:20%; color:#aaa;'>투타 지표</th><th style='color:#EF5350; width:40%;'>{away_team}</th></tr>
+        <tr><td><b>{h_p}</b> <span style='font-size:11px; color:#888;'>({h_ip:.1f}이닝)</span></td><td style='font-size:11px;'>선발 투수</td><td><b>{a_p}</b> <span style='font-size:11px; color:#888;'>({a_ip:.1f}이닝)</span></td></tr>
+        <tr><td>{h_s_fip:.2f}</td><td style='font-size:11px;'>선발 FIP</td><td>{a_s_fip:.2f}</td></tr>
+        <tr><td>{h_bp_fip:.2f}</td><td style='font-size:11px;'>불펜 FIP</td><td>{a_bp_fip:.2f}</td></tr>
+        <tr><td>{h_ops:.3f}</td><td style='font-size:11px;'>타선 OPS</td><td>{a_ops:.3f}</td></tr>
+    </table></div>"""
 
 def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
     if not h_lineup or not a_lineup: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (Team Average 연산 적용)</div>"
     m_len = max(len(h_lineup), len(a_lineup))
     h_lineup += [""] * (m_len - len(h_lineup)); a_lineup += [""] * (m_len - len(a_lineup))
-    html = "<div class='table-wrapper'><table class='detail-table'>"
-    html += f"<tr><th style='color:#4FC3F7;'>{home_team} (타순)</th><th style='color:#EF5350;'>{away_team} (타순)</th></tr>"
+    html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{home_team} (타순)</th><th style='color:#EF5350;'>{away_team} (타순)</th></tr>"
     for i, (h, a) in enumerate(zip(h_lineup, a_lineup)): html += f"<tr><td>{i+1}. {h}</td><td>{i+1}. {a}</td></tr>"
-    html += "</table></div>"
-    return html
-
+    return html + "</table></div>"
 
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.0)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.1)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -332,31 +275,14 @@ if selected_sport == "축구":
         l_293 = st.checkbox("K리그2 (KOR 2부)", value=False)
         l_98 = st.checkbox("J1리그 (JPN)", value=False)
 
-    selected_leagues = []
-    if l_2: selected_leagues.append("2")
-    if l_3: selected_leagues.append("3")
-    if l_1: selected_leagues.append("1")
-    if l_10: selected_leagues.append("10")
-    if l_39: selected_leagues.append("39")
-    if l_140: selected_leagues.append("140")
-    if l_135: selected_leagues.append("135")
-    if l_78: selected_leagues.append("78")
-    if l_61: selected_leagues.append("61")
-    if l_88: selected_leagues.append("88")
-    if l_119: selected_leagues.append("119")
-    if l_292: selected_leagues.append("292")
-    if l_293: selected_leagues.append("293")
-    if l_98: selected_leagues.append("98")
-
+    selected_leagues = [lid for lid, selected in zip(["2","3","1","10","39","140","135","78","61","88","119","292","293","98"], 
+                                                     [l_2, l_3, l_1, l_10, l_39, l_140, l_135, l_78, l_61, l_88, l_119, l_292, l_293, l_98]) if selected]
     LEAGUE_MAP = {"2":"챔피언스리그", "3":"유로파리그", "1":"월드컵", "10":"A매치", "39":"프리미어리그", "140":"라리가", "135":"세리에A", "78":"분데스리가", "61":"리그1", "88":"에레디비시", "119":"스코티시", "292":"K리그1", "293":"K리그2", "98":"J1리그"}
     AUTUMN_TO_SPRING_LEAGUES = ["2", "3", "39", "140", "135", "78", "61", "88", "119"]
 
     if analyze_button:
-        if not selected_leagues: 
-            st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
-            st.stop()
+        if not selected_leagues: st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요."); st.stop()
         
-        # 💡 재검색 시 이전 데이터 리셋
         st.session_state['analyzed_data_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         total_leagues = len(selected_leagues); new_data_list = []
@@ -370,14 +296,12 @@ if selected_sport == "축구":
             
             try:
                 res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params=querystring, timeout=10).json()
-                fixtures = res.get('response', [])
-                for match in fixtures:
+                for match in res.get('response', []):
                     fix_id = str(match['fixture']['id'])
                     home_id = match['teams']['home']['id']; away_id = match['teams']['away']['id']
                     home_kr = translate_to_ko(match['teams']['home']['name']); away_kr = translate_to_ko(match['teams']['away']['name'])
                     referee = str(match['fixture']['referee']).split(',')[0] if match['fixture']['referee'] else "배정 전"
                     venue = match['fixture']['venue']['name'] or "미정"
-                    
                     status_short = match['fixture']['status']['short']
                     is_finished = status_short in ['FT', 'AET', 'PEN']
                     is_live = status_short in ['1H', 'HT', '2H', 'ET', 'P']
@@ -390,81 +314,78 @@ if selected_sport == "축구":
                     elif is_finished: top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa; font-size:12px;'>[경기 종료]</span>"
                     else: top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time})"
                     
-                    h_goal = match['goals']['home'] if match['goals']['home'] is not None else 0
-                    a_goal = match['goals']['away'] if match['goals']['away'] is not None else 0
+                    h_g = match['goals']['home'] if match['goals']['home'] is not None else 0
+                    a_g = match['goals']['away'] if match['goals']['away'] is not None else 0
                     
-                    if is_finished: match_display = f"{home_kr} <span style='color:#00E676; margin:0 10px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr}"
-                    elif is_live: match_display = f"{home_kr} <span style='color:#ff5252; margin:0 10px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr}"
+                    if is_finished: match_display = f"{home_kr} <span style='color:#00E676; margin:0 10px; font-size:24px;'>{h_g} : {a_g}</span> {away_kr}"
+                    elif is_live: match_display = f"{home_kr} <span style='color:#ff5252; margin:0 10px; font-size:24px;'>{h_g} : {a_g}</span> {away_kr}"
                     else: match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 10px;'>VS</span> {away_kr}"
 
-                    pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
+                    pred_data = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
+                    if not pred_data: continue
+                    pred = pred_data[0]; comp = pred.get('comparison', {})
+                    
                     odds_res = requests.get("https://v3.football.api-sports.io/odds", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                     lineup_data = requests.get("https://v3.football.api-sports.io/fixtures/lineups", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
-                    injuries_res = requests.get("https://v3.football.api-sports.io/injuries", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
+                    inj_res = requests.get("https://v3.football.api-sports.io/injuries", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                     
-                    h_inj = [translate_to_ko(inj['player']['name']) for inj in injuries_res if inj['team']['id'] == home_id]
-                    a_inj = [translate_to_ko(inj['player']['name']) for inj in injuries_res if inj['team']['id'] == away_id]
+                    h_inj = [translate_to_ko(i['player']['name']) for i in inj_res if i['team']['id'] == home_id]
+                    a_inj = [translate_to_ko(i['player']['name']) for i in inj_res if i['team']['id'] == away_id]
+                    
+                    h_rank = pred.get('teams',{}).get('home',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
+                    a_rank = pred.get('teams',{}).get('away',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
+                    h_avg_f = pred.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
+                    a_avg_f = pred.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
+                    h_avg_a = pred.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
+                    a_avg_a = pred.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
 
-                    if not pred_res: continue
-                    pred_data = pred_res[0]; comparison = pred_data.get('comparison', {})
-                    h_rank = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
-                    a_rank = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
-                    h_goals_avg = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
-                    a_goals_avg = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
-                    h_goals_against_avg = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
-                    a_goals_against_avg = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
+                    wp = pred.get('predictions', {}).get('percent', {})
+                    p_h = wp.get('home', '33%').replace('%',''); p_d = wp.get('draw', '33%').replace('%',''); p_a = wp.get('away', '33%').replace('%','')
 
-                    win_prob = pred_data.get('predictions', {}).get('percent', {})
-                    p_h = win_prob.get('home', '33%').replace('%','')
-                    p_d = win_prob.get('draw', '33%').replace('%','')
-                    p_a = win_prob.get('away', '33%').replace('%','')
-
-                    h_vals = [safe_num(comparison.get('att', {}).get('home')), safe_num(comparison.get('def', {}).get('home')), safe_num(comparison.get('form', {}).get('home')), safe_num(comparison.get('h2h', {}).get('home')), safe_num(comparison.get('goals', {}).get('home')), safe_num(comparison.get('total', {}).get('home'))]
-                    a_vals = [safe_num(comparison.get('att', {}).get('away')), safe_num(comparison.get('def', {}).get('away')), safe_num(comparison.get('form', {}).get('away')), safe_num(comparison.get('h2h', {}).get('away')), safe_num(comparison.get('goals', {}).get('away')), safe_num(comparison.get('total', {}).get('away'))]
+                    h_vals = [safe_num(comp.get('att', {}).get('home')), safe_num(comp.get('def', {}).get('home')), safe_num(comp.get('form', {}).get('home')), safe_num(comp.get('h2h', {}).get('home')), safe_num(comp.get('goals', {}).get('home')), safe_num(comp.get('total', {}).get('home'))]
+                    a_vals = [safe_num(comp.get('att', {}).get('away')), safe_num(comp.get('def', {}).get('away')), safe_num(comp.get('form', {}).get('away')), safe_num(comp.get('h2h', {}).get('away')), safe_num(comp.get('goals', {}).get('away')), safe_num(comp.get('total', {}).get('away'))]
                     
                     is_custom = False
                     if sum(h_vals) < 10 or sum(a_vals) < 10:
-                        c_h_form, c_h_att, c_h_def = fetch_custom_team_stats(home_id, calc_season_year)
-                        c_a_form, c_a_att, c_a_def = fetch_custom_team_stats(away_id, calc_season_year)
-                        c_h_total = (c_h_att + c_h_def + c_h_form) / 3; c_a_total = (c_a_att + c_a_def + c_a_form) / 3
-                        h_vals = [c_h_att, c_h_def, c_h_form, 50, c_h_att, c_h_total]
-                        a_vals = [c_a_att, c_a_def, c_a_form, 50, c_a_att, c_a_total]
+                        cf_h, ca_h, cd_h = fetch_custom_team_stats(home_id, calc_season_year)
+                        cf_a, ca_a, cd_a = fetch_custom_team_stats(away_id, calc_season_year)
+                        h_vals = [ca_h, cd_h, cf_h, 50, ca_h, (ca_h+cd_h+cf_h)/3]
+                        a_vals = [ca_a, cd_a, cf_a, 50, ca_a, (ca_a+cd_a+cf_a)/3]
                         is_custom = True
 
                     radar_html = create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom)
-                    lineup_html = get_lineup_table(home_kr, away_kr, lineup_data)
-                    detail_html = get_football_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals_avg, a_goals_avg, h_goals_against_avg, a_goals_against_avg, h_inj, a_inj)
+                    detail_html = get_football_detailed_html(home_kr, away_kr, h_rank, a_rank, h_avg_f, a_avg_f, h_avg_a, a_avg_a, h_inj, a_inj)
 
-                    odds_h, odds_d, odds_a = 0.0, 0.0, 0.0
+                    odds_h = odds_d = odds_a = 0.0
                     if odds_res:
-                        for bet in odds_res[0].get('bookmakers', [])[0].get('bets', []):
-                            if bet['name'] == 'Match Winner':
-                                for val in bet['values']:
-                                    if str(val['value']) == 'Home': odds_h = float(val['odd'])
-                                    elif str(val['value']) == 'Draw': odds_d = float(val['odd'])
-                                    elif str(val['value']) == 'Away': odds_a = float(val['odd'])
+                        for b in odds_res[0].get('bookmakers', [])[0].get('bets', []):
+                            if b['name'] == 'Match Winner':
+                                for v in b['values']:
+                                    if str(v['value']) == 'Home': odds_h = float(v['odd'])
+                                    elif str(v['value']) == 'Draw': odds_d = float(v['odd'])
+                                    elif str(v['value']) == 'Away': odds_a = float(v['odd'])
                                 break
                     
                     h_power = (h_vals[0] + h_vals[2] + h_vals[3]) - (len(h_inj) * 3)
                     a_power = (a_vals[0] + a_vals[2] + a_vals[3]) - (len(a_inj) * 3)
 
-                    if h_power > a_power + 15: pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 전력 우세", "#00E676"
-                    elif a_power > h_power + 15: pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 전력 우세", "#4FC3F7"
-                    else: pred_winner, win_pick, pick_color = "draw", "🟡 팽팽한 무승부", "#ff9800"
+                    if h_power > a_power + 15: win_pick, pick_color = f"🟢 {home_kr} 전력 우세", "#00E676"; pred_winner = "home"
+                    elif a_power > h_power + 15: win_pick, pick_color = f"🔵 {away_kr} 전력 우세", "#4FC3F7"; pred_winner = "away"
+                    else: win_pick, pick_color = "🟡 팽팽한 무승부", "#ff9800"; pred_winner = "draw"
 
+                    # 💡 핵심: 종료된 경기일 경우 실제 결과와 비교하여 '적중/미적중' 표시 복구
                     if is_finished:
-                        actual = "home" if h_goal > a_goal else ("away" if a_goal > h_goal else "draw")
-                        win_pick += " (결과 확인)"
+                        actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
+                        win_pick += " (적중)" if actual == pred_winner else " (미적중)"
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                     stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
-                    advice = translate_to_ko(pred_data['predictions'].get('advice', '데이터 분석 완료'))
                     
-                    under_over_val = pred_data['predictions'].get('under_over', '')
-                    if under_over_val: over_under = f"🔥 예상 기준점: {under_over_val.replace('-', '').replace('+', '')} {'언더' if '-' in under_over_val else '오버'}"
-                    else: over_under = "🔥 2.5 기준 오버 (자체예측)" if (h_vals[4] + a_vals[4]) >= 120 else "❄️ 2.5 기준 언더 (자체예측)"
+                    under_over_val = pred.get('predictions', {}).get('under_over', '')
+                    over_under = f"🔥 예상 기준점: {under_over_val.replace('-','').replace('+','')} {'언더' if '-' in under_over_val else '오버'}" if under_over_val else ("🔥 2.5 오버 예상" if h_vals[4]+a_vals[4]>=120 else "❄️ 2.5 언더 예상")
+                    advice = translate_to_ko(pred.get('predictions', {}).get('advice', '데이터 분석 완료'))
 
-                    new_data_list.append({"sport": "축구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": referee, "venue": venue, "p_h": p_h, "p_d": p_d, "p_a": p_a, "win_pick": win_pick, "pick_color": pick_color, "control_pick": advice, "over_under": over_under, "radar_html": radar_html, "lineup_html": lineup_html, "detail_html": detail_html})
+                    new_data_list.append({"sport": "축구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": referee, "venue": venue, "p_h": p_h, "p_d": p_d, "p_a": p_a, "win_pick": win_pick, "pick_color": pick_color, "control_pick": advice, "over_under": over_under, "radar_html": radar_html, "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html})
             except: pass
         
         progress_bar.progress(1.0); status_text.text("✅ 축구 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
@@ -481,7 +402,6 @@ elif selected_sport == "야구":
     with st.sidebar.expander("아시아 야구 (준비중)", expanded=False): st.checkbox("한국 프로야구 (KBO)", value=False, disabled=True)
 
     if analyze_button:
-        # 💡 재검색 시 이전 데이터 리셋
         st.session_state['analyzed_data_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         status_text.text(f"🔍 MLB 실시간 스탯 불러오는 중... (1/2)")
@@ -537,9 +457,7 @@ elif selected_sport == "야구":
 
                 h_lineup, a_lineup = load_mlb_live_lineup(game_pk)
 
-                h_win_prob, a_win_prob, h_exp_runs, a_exp_runs = run_mlb_simulation(
-                    h_s_fip, a_s_fip, h_s_ip, a_s_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, h_momentum, a_momentum, pf
-                )
+                h_win_prob, a_win_prob, h_exp_runs, a_exp_runs = run_mlb_simulation(h_s_fip, a_s_fip, h_s_ip, a_s_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, h_momentum, a_momentum, pf)
                 
                 odds_h = max(1.10, min(round(0.94 / (h_win_prob/100), 2), 6.00)) if h_win_prob > 0 else 0
                 odds_a = max(1.10, min(round(0.94 / (a_win_prob/100), 2), 6.00)) if a_win_prob > 0 else 0
@@ -548,16 +466,19 @@ elif selected_sport == "야구":
                 elif a_win_prob > h_win_prob + 10: win_pick = f"🔵 {away_team} 승리 유력"; pick_color = "#4FC3F7"
                 else: win_pick = "🟡 팽팽한 투수/타격전 (접전)"; pick_color = "#ff9800"
                 
-                if status_code == 'Final': win_pick += " (결과 확인)"
+                # 💡 핵심: 야구도 종료된 경기일 경우 실제 결과와 비교하여 '적중/미적중' 표시 추가
+                if status_code == 'Final':
+                    actual = "home" if h_score > a_score else "away"
+                    win_pick += " (적중)" if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob) else " (미적중)"
 
                 stat_box = f"<span style='color:#aaa;'>AI 산출 배당:</span> 홈 <b style='color:#ff9800;'>{odds_h:.2f}</b> | 원정 <b style='color:#ff9800;'>{odds_a:.2f}</b><br><span style='color:#aaa;'>기대 득점:</span> {home_team} <b>{h_exp_runs:.1f}점</b> vs <b>{a_exp_runs:.1f}점</b> {away_team}"
                 
                 total_exp_runs = h_exp_runs + a_exp_runs
-                if total_exp_runs > 9.0: over_under = f"🔥 예상 총 득점: {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>오버 확률 높음</b>)"
-                elif total_exp_runs < 8.0: over_under = f"❄️ 예상 총 득점: {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>언더 확률 높음</b>)"
-                else: over_under = f"⚠️ 예상 총 득점: {total_exp_runs:.1f}점 (기준점 8.5 근접 접전)"
+                if total_exp_runs > 9.0: over_under = f"🔥 총 {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>오버 유력</b>)"
+                elif total_exp_runs < 8.0: over_under = f"❄️ 총 {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>언더 유력</b>)"
+                else: over_under = f"⚠️ 총 {total_exp_runs:.1f}점 (기준점 8.5 근접)"
                 
-                advice = "양 팀 선발투수의 FIP와 팀 전체 타선의 가상 OPS를 5,000회 몬테카를로 시뮬레이션 한 결과입니다."
+                advice = "양 팀 선발의 FIP와 타선의 최근 OPS를 5,000회 몬테카를로 시뮬레이션 한 결과입니다."
 
                 detail_html = get_baseball_detailed_html(home_team, away_team, home_pitcher, away_pitcher, h_s_fip, a_s_fip, h_bp_fip, a_bp_fip, h_ops, a_ops, h_s_ip, a_s_ip)
                 lineup_html = get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup)
@@ -570,14 +491,10 @@ elif selected_sport == "야구":
 # ==========================================
 # 🏀 농구 / 🏐 배구
 # ==========================================
-elif selected_sport == "농구":
-    st.sidebar.button("🚀 농구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
+elif selected_sport in ["농구", "배구"]:
+    st.sidebar.button(f"🚀 {selected_sport} 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🏀 농구 리그 선택 (준비중)")
-elif selected_sport == "배구":
-    st.sidebar.button("🚀 배구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🏐 배구 리그 선택 (준비중)")
+    st.sidebar.markdown(f"### {selected_sport} 리그 선택 (준비중)")
 
 # ==========================================
 # 📺 공통 렌더링 엔진 (결과 출력)
@@ -591,10 +508,28 @@ if st.session_state.get('analyzed_data_list'):
             else:
                 prob_bar = f"<div class='prob-text'><span>승 {data['p_h']}%</span><span>무 {data['p_d']}%</span><span>패 {data['p_a']}%</span></div><div class='prob-container'><div class='prob-home' style='width: {data['p_h']}%;'></div><div class='prob-draw' style='width: {data['p_d']}%;'></div><div class='prob-away' style='width: {data['p_a']}%;'></div></div>"
             
-            html_str = f"<div style='height: 100%;'><div class='card-box'><div><div class='league-txt'>{data['league']}</div><div class='match-txt'>{data['match_display']}</div><div class='referee-txt'>🏟️ {data['venue']}</div>{prob_bar}<div class='stat-bg'>{data['stat_box']}</div></div><div class='predict-txt'><div style='color: {data['pick_color']}; margin-bottom: 3px;'>🎯 {data['win_pick']}</div><div class='over-under'>{data['over_under']}</div><div class='ai-advice'>⚔️ 요약: {data['control_pick']}</div></div></div></div>"
+            # 💡 핵심: 섹션 구분을 명확히 하여 텍스트가 위아래로 밀리는 것을 방지
+            html_str = f"""
+            <div style='height: 100%;'>
+                <div class='card-box'>
+                    <div>
+                        <div class='league-txt'>{data['league']}</div>
+                        <div class='match-txt'>{data['match_display']}</div>
+                        <div class='referee-txt'>🏟️ {data['venue']}</div>
+                        {prob_bar}
+                        <div class='stat-bg'>{data['stat_box']}</div>
+                    </div>
+                    <div class='predict-section'>
+                        <div class='predict-txt' style='color: {data['pick_color']};'>🎯 {data['win_pick']}</div>
+                        <div class='over-under'>{data['over_under']}</div>
+                        <div class='ai-advice'>⚔️ 요약: {data['control_pick']}</div>
+                    </div>
+                </div>
+            </div>
+            """
             st.markdown(html_str, unsafe_allow_html=True)
             
-            with st.expander("🔍 상세 지표 & 선발 라인업 확인"):
+            with st.expander("🔍 상세 지표 & 선발 명단 확인"):
                 st.markdown(data['detail_html'], unsafe_allow_html=True)
                 if data['sport'] == "축구": st.markdown(data.get('radar_html', ''), unsafe_allow_html=True)
                 st.markdown(data['lineup_html'], unsafe_allow_html=True)
