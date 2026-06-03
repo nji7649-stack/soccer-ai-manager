@@ -9,7 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 카드 내부 간격 쫀쫀하게 조절
+# 🎨 UI CSS: 카드 내부 간격 쫀쫀하게 조절 및 적중 색상 강화
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
@@ -17,9 +17,9 @@ custom_css = """
 .stApp { background-color: #0e1117; }
 
 .card-box {
-    background-color: #1e1e1e; padding: 15px 20px; border-radius: 12px; /* 위아래 패딩 약간 축소 */
+    background-color: #1e1e1e; padding: 15px 20px; border-radius: 12px; 
     border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px;
-    display: flex; flex-direction: column; justify-content: flex-start; /* 간격 벌어짐 방지 */
+    display: flex; flex-direction: column; justify-content: flex-start; /* 💡 핵심: 요소들을 위로 밀착시켜 중간 빈칸 제거 */
     height: 520px; overflow: hidden;
 }
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
@@ -203,8 +203,10 @@ def run_mlb_simulation(h_fip, a_fip, h_avg_ip, a_avg_ip, h_ops, a_ops, h_bp_fip,
     h_starter_w = h_avg_ip / 9.0; a_starter_w = a_avg_ip / 9.0
     h_eff_fip = (h_fip * h_starter_w) + (h_bp_fip * (1 - h_starter_w))
     a_eff_fip = (a_fip * a_starter_w) + (a_bp_fip * (1 - a_starter_w))
-    h_expected_runs = ((a_eff_fip * ((h_ops / 0.720) * h_momentum if h_ops > 0 else 1.0 * h_momentum)) + 0.2) * park_factor
-    a_expected_runs = (h_eff_fip * ((a_ops / 0.720) * a_momentum if a_ops > 0 else 1.0 * a_momentum)) * park_factor
+    h_attack = (h_ops / 0.720) * h_momentum if h_ops > 0 else 1.0 * h_momentum
+    a_attack = (a_ops / 0.720) * a_momentum if a_ops > 0 else 1.0 * a_momentum
+    h_expected_runs = ((a_eff_fip * h_attack) + 0.2) * park_factor
+    a_expected_runs = (h_eff_fip * a_attack) * park_factor
     h_wins, a_wins = 0, 0
     h_tie_win_prob = h_expected_runs / (h_expected_runs + a_expected_runs) if (h_expected_runs + a_expected_runs) > 0 else 0.5
     for _ in range(num_sims):
@@ -235,7 +237,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.1)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.2)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -369,14 +371,20 @@ if selected_sport == "축구":
                     h_power = (h_vals[0] + h_vals[2] + h_vals[3]) - (len(h_inj) * 3)
                     a_power = (a_vals[0] + a_vals[2] + a_vals[3]) - (len(a_inj) * 3)
 
+                    # 💡 기본 예측
                     if h_power > a_power + 15: win_pick, pick_color = f"🟢 {home_kr} 전력 우세", "#00E676"; pred_winner = "home"
                     elif a_power > h_power + 15: win_pick, pick_color = f"🔵 {away_kr} 전력 우세", "#4FC3F7"; pred_winner = "away"
                     else: win_pick, pick_color = "🟡 팽팽한 무승부", "#ff9800"; pred_winner = "draw"
 
-                    # 💡 핵심: 종료된 경기일 경우 실제 결과와 비교하여 '적중/미적중' 표시 복구
+                    # 💡 적중/미적중 피드백 컬러 수정
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
-                        win_pick += " (적중)" if actual == pred_winner else " (미적중)"
+                        if actual == pred_winner:
+                            win_pick += " (✅ 적중)"
+                            pick_color = "#ffcc00" # 적중 시 노란색(골드)으로 확 튀게
+                        else:
+                            win_pick += " (❌ 미적중)"
+                            pick_color = "#ff5252" # 미적중 시 빨간색
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                     stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
@@ -457,7 +465,9 @@ elif selected_sport == "야구":
 
                 h_lineup, a_lineup = load_mlb_live_lineup(game_pk)
 
-                h_win_prob, a_win_prob, h_exp_runs, a_exp_runs = run_mlb_simulation(h_s_fip, a_s_fip, h_s_ip, a_s_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, h_momentum, a_momentum, pf)
+                h_win_prob, a_win_prob, h_exp_runs, a_exp_runs = run_mlb_simulation(
+                    h_s_fip, a_s_fip, h_s_ip, a_s_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, h_momentum, a_momentum, pf
+                )
                 
                 odds_h = max(1.10, min(round(0.94 / (h_win_prob/100), 2), 6.00)) if h_win_prob > 0 else 0
                 odds_a = max(1.10, min(round(0.94 / (a_win_prob/100), 2), 6.00)) if a_win_prob > 0 else 0
@@ -466,19 +476,24 @@ elif selected_sport == "야구":
                 elif a_win_prob > h_win_prob + 10: win_pick = f"🔵 {away_team} 승리 유력"; pick_color = "#4FC3F7"
                 else: win_pick = "🟡 팽팽한 투수/타격전 (접전)"; pick_color = "#ff9800"
                 
-                # 💡 핵심: 야구도 종료된 경기일 경우 실제 결과와 비교하여 '적중/미적중' 표시 추가
+                # 💡 야구 적중/미적중 피드백 컬러 수정
                 if status_code == 'Final':
                     actual = "home" if h_score > a_score else "away"
-                    win_pick += " (적중)" if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob) else " (미적중)"
+                    if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob):
+                        win_pick += " (✅ 적중)"
+                        pick_color = "#ffcc00"
+                    else:
+                        win_pick += " (❌ 미적중)"
+                        pick_color = "#ff5252"
 
                 stat_box = f"<span style='color:#aaa;'>AI 산출 배당:</span> 홈 <b style='color:#ff9800;'>{odds_h:.2f}</b> | 원정 <b style='color:#ff9800;'>{odds_a:.2f}</b><br><span style='color:#aaa;'>기대 득점:</span> {home_team} <b>{h_exp_runs:.1f}점</b> vs <b>{a_exp_runs:.1f}점</b> {away_team}"
                 
                 total_exp_runs = h_exp_runs + a_exp_runs
-                if total_exp_runs > 9.0: over_under = f"🔥 총 {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>오버 유력</b>)"
-                elif total_exp_runs < 8.0: over_under = f"❄️ 총 {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>언더 유력</b>)"
-                else: over_under = f"⚠️ 총 {total_exp_runs:.1f}점 (기준점 8.5 근접)"
+                if total_exp_runs > 9.0: over_under = f"🔥 예상 총 득점: {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>오버 확률 높음</b>)"
+                elif total_exp_runs < 8.0: over_under = f"❄️ 예상 총 득점: {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>언더 확률 높음</b>)"
+                else: over_under = f"⚠️ 예상 총 득점: {total_exp_runs:.1f}점 (기준점 8.5 근접 접전)"
                 
-                advice = "양 팀 선발의 FIP와 타선의 최근 OPS를 5,000회 몬테카를로 시뮬레이션 한 결과입니다."
+                advice = "양 팀 선발투수의 FIP와 팀 전체 타선의 가상 OPS를 5,000회 몬테카를로 시뮬레이션 한 결과입니다."
 
                 detail_html = get_baseball_detailed_html(home_team, away_team, home_pitcher, away_pitcher, h_s_fip, a_s_fip, h_bp_fip, a_bp_fip, h_ops, a_ops, h_s_ip, a_s_ip)
                 lineup_html = get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup)
@@ -489,7 +504,7 @@ elif selected_sport == "야구":
         except Exception as e: st.error(f"오류: {e}")
 
 # ==========================================
-# 🏀 농구 / 🏐 배구
+# 🏀 농구 / 🏐 배구 (추후 업데이트)
 # ==========================================
 elif selected_sport in ["농구", "배구"]:
     st.sidebar.button(f"🚀 {selected_sport} 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
@@ -508,7 +523,7 @@ if st.session_state.get('analyzed_data_list'):
             else:
                 prob_bar = f"<div class='prob-text'><span>승 {data['p_h']}%</span><span>무 {data['p_d']}%</span><span>패 {data['p_a']}%</span></div><div class='prob-container'><div class='prob-home' style='width: {data['p_h']}%;'></div><div class='prob-draw' style='width: {data['p_d']}%;'></div><div class='prob-away' style='width: {data['p_a']}%;'></div></div>"
             
-            # 💡 핵심: 섹션 구분을 명확히 하여 텍스트가 위아래로 밀리는 것을 방지
+            # 💡 핵심: 텍스트 모음을 predict-section으로 묶어 카드 하단에 단단히 고정 (여백 없앰)
             html_str = f"""
             <div style='height: 100%;'>
                 <div class='card-box'>
