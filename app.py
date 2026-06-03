@@ -7,7 +7,6 @@ import math
 
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 UI CSS: 완벽한 반응형 및 말줄임표 CSS 유지
 custom_css = """
 <style>
 .stApp { background-color: #121212; }
@@ -135,6 +134,11 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
 st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px;'>🏆 AI 정밀 전력 생성 분석실</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
+# 💡 수정 1: 날짜 선택기를 최상단으로 이동
+st.sidebar.markdown("### 📅 검색 날짜 설정")
+selected_date = st.sidebar.date_input("날짜를 선택하세요", datetime.today())
+st.sidebar.markdown("---")
+
 st.sidebar.markdown("### 🏆 분석 리그 선택")
 
 with st.sidebar.expander("🌍 국가대표 매치", expanded=True):
@@ -151,7 +155,8 @@ with st.sidebar.expander("⚽ 유럽 5대 리그", expanded=True):
 with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
     l_292 = st.checkbox("K리그1 (KOR)", value=False)
 
-selected_date = st.sidebar.date_input("📅 날짜 선택", datetime.today())
+# 💡 유지: 유럽 축구 추춘제 시즌 자동 감지 로직
+target_season_year = str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year)
 
 selected_leagues = []
 if l_1: selected_leagues.append("1")
@@ -177,13 +182,12 @@ if st.sidebar.button("🚀 데이터 강제 수집 및 분석 시작"):
         status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 스탯 수집 중... ({idx+1}/{total_leagues})")
         progress_bar.progress((idx) / total_leagues)
         
-        # 💡 핵심 V23.1: 리그별 시즌(Season) 독립 계산 로직 (추춘제 vs 춘추제 완벽 분리)
-        if league_id in ["39", "140", "135", "78", "61"]: # 유럽 5대 리그 (가을 시작 ~ 이듬해 봄 종료)
-            target_season_year = str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year)
-        else: # K리그, 국가대표 매치 등 (봄 시작 ~ 가을 종료, 또는 단일 연도)
-            target_season_year = str(selected_date.year)
+        if league_id in ["39", "140", "135", "78", "61"]: 
+            calc_season_year = str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year)
+        else: 
+            calc_season_year = str(selected_date.year)
             
-        querystring = {"league": league_id, "season": target_season_year, "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
+        querystring = {"league": league_id, "season": calc_season_year, "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
         
         try:
             res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params=querystring, timeout=10).json()
@@ -222,8 +226,8 @@ if st.sidebar.button("🚀 데이터 강제 수집 및 분석 시작"):
                 
                 is_custom = False
                 if sum(h_vals) < 10 or sum(a_vals) < 10:
-                    c_h_form, c_h_att, c_h_def = fetch_custom_team_stats(home_id, target_season_year)
-                    c_a_form, c_a_att, c_a_def = fetch_custom_team_stats(away_id, target_season_year)
+                    c_h_form, c_h_att, c_h_def = fetch_custom_team_stats(home_id, calc_season_year)
+                    c_a_form, c_a_att, c_a_def = fetch_custom_team_stats(away_id, calc_season_year)
                     h_vals = [c_h_att, c_h_def, c_h_form, 50, c_h_att, 50]
                     a_vals = [c_a_att, c_a_def, c_a_form, 50, c_a_att, 50]
                     is_custom = True
