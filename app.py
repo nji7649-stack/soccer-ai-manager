@@ -7,7 +7,7 @@ import math
 
 st.set_page_config(page_title="AI 축구 분석실 PRO MAX", page_icon="⚽", layout="wide")
 
-# 🎨 UI CSS: 디테일 분석 탭, 뱃지, 프로그레스바 등 고급 UI 추가
+# 🎨 UI CSS
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -88,8 +88,8 @@ def fetch_custom_team_stats(team_id, season_year):
         return (wins / 5) * 100, min((goals_for / 15) * 100, 100), max(100 - (goals_against / 10) * 100, 0)
     except: return 20, 20, 20
 
-# 💡 디테일 분석 탭 (부상자 및 순위/득실 스탯)
-def get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals, a_goals, h_injuries, a_injuries):
+# 💡 업데이트: '평균 실점' 행 추가 완비!
+def get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals, a_goals, h_goals_against, a_goals_against, h_injuries, a_injuries):
     h_inj_html = "".join([f"<span class='injury-tag'>🚑 {inj}</span>" for inj in h_injuries]) or "<span style='color:#888;'>결장자 없음</span>"
     a_inj_html = "".join([f"<span class='injury-tag'>🚑 {inj}</span>" for inj in a_injuries]) or "<span style='color:#888;'>결장자 없음</span>"
     
@@ -98,7 +98,8 @@ def get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals, a_goals, h_inju
         <table class='detail-table'>
             <tr><th style='color:#4FC3F7; width:40%;'>{home_kr}</th><th style='width:20%; color:#aaa;'>비교 지표</th><th style='color:#EF5350; width:40%;'>{away_kr}</th></tr>
             <tr><td><b>{h_rank}</b>위</td><td style='font-size:11px;'>리그 순위</td><td><b>{a_rank}</b>위</td></tr>
-            <tr><td>{h_goals}골</td><td style='font-size:11px;'>평균 득점력</td><td>{a_goals}골</td></tr>
+            <tr><td>{h_goals}골</td><td style='font-size:11px;'>평균 득점</td><td>{a_goals}골</td></tr>
+            <tr><td>{h_goals_against}골</td><td style='font-size:11px;'>평균 실점</td><td>{a_goals_against}골</td></tr>
             <tr>
                 <td style='white-space:normal;'>{h_inj_html}</td>
                 <td style='font-size:11px;'>결장/부상</td>
@@ -122,8 +123,9 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
     html += "</table></div>"
     return html
 
+# 💡 업데이트: 비어있던 '전술도(poisson)'를 삭제하고 가장 확실한 '종합전력(total)'로 대체 완비!
 def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
-    labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '전술도']
+    labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '종합전력']
     size = 220; center = size / 2; max_val = 100
     
     def get_poly(vals, bc, fc):
@@ -242,7 +244,6 @@ if analyze_button:
                 home_kr = translate_to_ko(match['teams']['home']['name'])
                 away_kr = translate_to_ko(match['teams']['away']['name'])
                 
-                # 심판 및 구장 정보 추가
                 referee = str(match['fixture']['referee']).split(',')[0] if match['fixture']['referee'] else "배정 전"
                 venue = match['fixture']['venue']['name'] or "미정"
                 
@@ -261,45 +262,50 @@ if analyze_button:
                 elif is_live: match_display = f"{home_kr} <span style='color:#ff9800; margin:0 10px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr}"
                 else: match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 10px;'>VS</span> {away_kr}"
 
-                # 💡 고급 데이터 일괄 수집
                 pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 odds_res = requests.get("https://v3.football.api-sports.io/odds", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 lineup_data = requests.get("https://v3.football.api-sports.io/fixtures/lineups", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 injuries_res = requests.get("https://v3.football.api-sports.io/injuries", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
-                # 결장자 분류
                 h_inj = [translate_to_ko(inj['player']['name']) for inj in injuries_res if inj['team']['id'] == home_id]
                 a_inj = [translate_to_ko(inj['player']['name']) for inj in injuries_res if inj['team']['id'] == away_id]
 
                 if not pred_res: continue
                 pred_data = pred_res[0]; comparison = pred_data.get('comparison', {})
                 
-                # 순위 및 평균 득점 데이터 추출
                 h_rank = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
                 a_rank = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
                 h_goals_avg = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
                 a_goals_avg = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
+                
+                # 💡 업데이트: '평균 실점' 데이터 완벽 파싱
+                h_goals_against_avg = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
+                a_goals_against_avg = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
 
-                # AI 확률 (퍼센트)
                 win_prob = pred_data.get('predictions', {}).get('percent', {})
                 p_h = win_prob.get('home', '33%').replace('%','')
                 p_d = win_prob.get('draw', '33%').replace('%','')
                 p_a = win_prob.get('away', '33%').replace('%','')
 
-                h_vals = [safe_num(comparison.get('att', {}).get('home')), safe_num(comparison.get('def', {}).get('home')), safe_num(comparison.get('form', {}).get('home')), safe_num(comparison.get('h2h', {}).get('home')), safe_num(comparison.get('goals', {}).get('home')), safe_num(comparison.get('poisson', {}).get('home'))]
-                a_vals = [safe_num(comparison.get('att', {}).get('away')), safe_num(comparison.get('def', {}).get('away')), safe_num(comparison.get('form', {}).get('away')), safe_num(comparison.get('h2h', {}).get('away')), safe_num(comparison.get('goals', {}).get('away')), safe_num(comparison.get('poisson', {}).get('away'))]
+                # 💡 업데이트: 빈칸만 나오던 'poisson(전술도)'을 버리고 꽉 차는 'total(종합전력)'로 레이더 교체!
+                h_vals = [safe_num(comparison.get('att', {}).get('home')), safe_num(comparison.get('def', {}).get('home')), safe_num(comparison.get('form', {}).get('home')), safe_num(comparison.get('h2h', {}).get('home')), safe_num(comparison.get('goals', {}).get('home')), safe_num(comparison.get('total', {}).get('home'))]
+                a_vals = [safe_num(comparison.get('att', {}).get('away')), safe_num(comparison.get('def', {}).get('away')), safe_num(comparison.get('form', {}).get('away')), safe_num(comparison.get('h2h', {}).get('away')), safe_num(comparison.get('goals', {}).get('away')), safe_num(comparison.get('total', {}).get('away'))]
                 
                 is_custom = False
                 if sum(h_vals) < 10 or sum(a_vals) < 10:
                     c_h_form, c_h_att, c_h_def = fetch_custom_team_stats(home_id, calc_season_year)
                     c_a_form, c_a_att, c_a_def = fetch_custom_team_stats(away_id, calc_season_year)
-                    h_vals = [c_h_att, c_h_def, c_h_form, 50, c_h_att, 50]
-                    a_vals = [c_a_att, c_a_def, c_a_form, 50, c_a_att, 50]
+                    c_h_total = (c_h_att + c_h_def + c_h_form) / 3
+                    c_a_total = (c_a_att + c_a_def + c_a_form) / 3
+                    h_vals = [c_h_att, c_h_def, c_h_form, 50, c_h_att, c_h_total]
+                    a_vals = [c_a_att, c_a_def, c_a_form, 50, c_a_att, c_a_total]
                     is_custom = True
 
                 radar_html = create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom)
                 lineup_html = get_lineup_table(home_kr, away_kr, lineup_data)
-                detail_html = get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals_avg, a_goals_avg, h_inj, a_inj)
+                
+                # 상세 HTML 표에 평균 실점 데이터 전송
+                detail_html = get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals_avg, a_goals_avg, h_goals_against_avg, a_goals_against_avg, h_inj, a_inj)
 
                 odds_h, odds_d, odds_a = 0.0, 0.0, 0.0
                 if odds_res:
@@ -311,7 +317,6 @@ if analyze_button:
                                 elif str(val['value']) == 'Away': odds_a = float(val['odd'])
                             break
                 
-                # 💡 핵심: 결장자(부상) 반영 로직 (결장자 1명당 파워 -3점 삭감)
                 h_power = (h_vals[0] + h_vals[2] + h_vals[3]) - (len(h_inj) * 3)
                 a_power = (a_vals[0] + a_vals[2] + a_vals[3]) - (len(a_inj) * 3)
 
@@ -366,7 +371,6 @@ if st.session_state.get('analyzed_data_list'):
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_data_list']):
         with cols[idx % 3]:
-            # 💡 AI 승률 그래프바 & 주심 정보 시각화 HTML
             prob_bar = f"""
             <div class='prob-text'><span>승 {data['p_h']}%</span><span>무 {data['p_d']}%</span><span>패 {data['p_a']}%</span></div>
             <div class='prob-container'>
