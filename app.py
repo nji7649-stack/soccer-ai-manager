@@ -25,14 +25,12 @@ custom_css = """
 .ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; }
 .over-under { font-size: 13px; color: #ddd; font-weight: normal; margin-top: 4px; }
 
-/* 확률 바 (Probability Bar) */
 .prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 5px; margin-bottom: 15px; background-color: #333; }
 .prob-home { background-color: #4FC3F7; height: 100%; }
 .prob-draw { background-color: #ff9800; height: 100%; }
 .prob-away { background-color: #EF5350; height: 100%; }
 .prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 3px; }
 
-/* 세부 스탯 테이블 */
 .table-wrapper { overflow-x: auto; margin-top: 10px; }
 .detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; }
 .detail-table th { background-color: #111; padding: 8px; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }
@@ -88,7 +86,6 @@ def fetch_custom_team_stats(team_id, season_year):
         return (wins / 5) * 100, min((goals_for / 15) * 100, 100), max(100 - (goals_against / 10) * 100, 0)
     except: return 20, 20, 20
 
-# 💡 업데이트: '평균 실점' 행 추가 완비!
 def get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals, a_goals, h_goals_against, a_goals_against, h_injuries, a_injuries):
     h_inj_html = "".join([f"<span class='injury-tag'>🚑 {inj}</span>" for inj in h_injuries]) or "<span style='color:#888;'>결장자 없음</span>"
     a_inj_html = "".join([f"<span class='injury-tag'>🚑 {inj}</span>" for inj in a_injuries]) or "<span style='color:#888;'>결장자 없음</span>"
@@ -123,7 +120,6 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
     html += "</table></div>"
     return html
 
-# 💡 업데이트: 비어있던 '전술도(poisson)'를 삭제하고 가장 확실한 '종합전력(total)'로 대체 완비!
 def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '종합전력']
     size = 220; center = size / 2; max_val = 100
@@ -251,15 +247,23 @@ if analyze_button:
                 is_finished = status_short in ['FT', 'AET', 'PEN']
                 is_live = status_short in ['1H', 'HT', '2H', 'ET', 'P']
                 
+                # 💡 핵심: 진행 중인 경기 시간(분) 가져오기 로직 추가
+                elapsed_time = match['fixture']['status'].get('elapsed', '')
+                
                 try: match_time = datetime.strptime(match['fixture']['date'][:16], "%Y-%m-%dT%H:%M").strftime("%H:%M")
                 except: match_time = "시간미정"
-                top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time})"
+                
+                # 💡 핵심: 진행 중일 경우 리그명 밑에 [🔴 진행중: OO분] 표시
+                if is_live and elapsed_time:
+                    top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252; font-size:12px;'>[🔴 진행중: {elapsed_time}분]</span>"
+                else:
+                    top_league_display = f"{LEAGUE_MAP[league_id]} ({match_time})"
                 
                 h_goal = match['goals']['home'] if match['goals']['home'] is not None else 0
                 a_goal = match['goals']['away'] if match['goals']['away'] is not None else 0
                 
                 if is_finished: match_display = f"{home_kr} <span style='color:#00E676; margin:0 10px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr}"
-                elif is_live: match_display = f"{home_kr} <span style='color:#ff9800; margin:0 10px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr}"
+                elif is_live: match_display = f"{home_kr} <span style='color:#ff5252; margin:0 10px; font-size:24px;'>{h_goal} : {a_goal}</span> {away_kr}"
                 else: match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 10px;'>VS</span> {away_kr}"
 
                 pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
@@ -277,8 +281,6 @@ if analyze_button:
                 a_rank = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('standings', [{}])[0].get('rank', 'N/A')
                 h_goals_avg = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
                 a_goals_avg = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('for',{}).get('average',{}).get('total', '0')
-                
-                # 💡 업데이트: '평균 실점' 데이터 완벽 파싱
                 h_goals_against_avg = pred_data.get('teams',{}).get('home',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
                 a_goals_against_avg = pred_data.get('teams',{}).get('away',{}).get('league',{}).get('goals',{}).get('against',{}).get('average',{}).get('total', '0')
 
@@ -287,7 +289,6 @@ if analyze_button:
                 p_d = win_prob.get('draw', '33%').replace('%','')
                 p_a = win_prob.get('away', '33%').replace('%','')
 
-                # 💡 업데이트: 빈칸만 나오던 'poisson(전술도)'을 버리고 꽉 차는 'total(종합전력)'로 레이더 교체!
                 h_vals = [safe_num(comparison.get('att', {}).get('home')), safe_num(comparison.get('def', {}).get('home')), safe_num(comparison.get('form', {}).get('home')), safe_num(comparison.get('h2h', {}).get('home')), safe_num(comparison.get('goals', {}).get('home')), safe_num(comparison.get('total', {}).get('home'))]
                 a_vals = [safe_num(comparison.get('att', {}).get('away')), safe_num(comparison.get('def', {}).get('away')), safe_num(comparison.get('form', {}).get('away')), safe_num(comparison.get('h2h', {}).get('away')), safe_num(comparison.get('goals', {}).get('away')), safe_num(comparison.get('total', {}).get('away'))]
                 
@@ -303,8 +304,6 @@ if analyze_button:
 
                 radar_html = create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom)
                 lineup_html = get_lineup_table(home_kr, away_kr, lineup_data)
-                
-                # 상세 HTML 표에 평균 실점 데이터 전송
                 detail_html = get_detailed_html(home_kr, away_kr, h_rank, a_rank, h_goals_avg, a_goals_avg, h_goals_against_avg, a_goals_against_avg, h_inj, a_inj)
 
                 odds_h, odds_d, odds_a = 0.0, 0.0, 0.0
