@@ -5,10 +5,9 @@ from deep_translator import GoogleTranslator
 import time
 import math
 
-# 💡 페이지 제목도 '종합 스포츠' 느낌으로 변경
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS
+# 🎨 UI CSS: 디테일 분석 탭, 뱃지, 프로그레스바 및 ✨상단 대형 네비게이션 탭✨
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -38,12 +37,49 @@ custom_css = """
 .detail-table td { padding: 6px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 2px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
-/* 💡 상단 탭(라디오 버튼)을 네비게이션 바처럼 보이게 하는 CSS */
-div[role="radiogroup"] > label { padding: 10px 20px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+/* 💡 핵심: 상단 종목 선택 네비게이션 대형화 및 박스형 디자인 */
+.stRadio {
+    background-color: #1a1c23;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.stRadio > div[role="radiogroup"] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 15px;
+}
+.stRadio > div[role="radiogroup"] > label {
+    flex: 1;
+    min-width: 150px;
+    background-color: #262730;
+    padding: 18px 10px;
+    border-radius: 10px;
+    border: 2px solid #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    justify-content: center;
+}
+.stRadio > div[role="radiogroup"] > label:hover {
+    border-color: #00E676;
+    background-color: #2a2d36;
+    transform: translateY(-2px);
+}
+.stRadio > div[role="radiogroup"] p {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    margin: 0;
+    text-align: center;
+}
 
 @media (max-width: 768px) {
     .card-box { padding: 15px; margin-bottom: 15px; }
     .match-txt { font-size: 17px; }
+    .stRadio > div[role="radiogroup"] > label { min-width: 100%; padding: 12px; }
+    .stRadio > div[role="radiogroup"] p { font-size: 18px !important; }
 }
 </style>
 """
@@ -52,7 +88,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 API_KEY = st.secrets["FOOTBALL_API_KEY"]
 HEADERS = {'x-apisports-key': API_KEY}
 
-# --- 함수 모음 (축구 전용) ---
+# --- 함수 모음 ---
 @st.cache_data(show_spinner=False)
 def translate_to_ko(text):
     if not text or str(text).strip() in ['', 'N/A']: return '데이터 분석 중'
@@ -158,18 +194,18 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
 # --- 💡 메인 화면 렌더링 ---
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px;'>🏆 AI 궁극의 디테일 분석실 (V26 PRO MAX)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 (PRO MAX)</h1>", unsafe_allow_html=True)
 
-# 💡 최상단 종목 네비게이션 바 (가로형 라디오 버튼)
+# 💡 대형 네비게이션 바 (가로 꽉 차는 큰 박스형 라디오 버튼)
 selected_sport = st.radio(
     "종목 선택", 
     ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"], 
     horizontal=True, 
     label_visibility="collapsed"
 )
-st.markdown("---")
+st.markdown("<br>", unsafe_allow_html=True)
 
-# 공통 사이드바 (날짜는 어느 종목이든 공통으로 씀)
+# 공통 사이드바
 st.sidebar.markdown("### 📅 검색 날짜 설정")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", datetime.today())
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
@@ -180,7 +216,7 @@ st.sidebar.markdown("<br>", unsafe_allow_html=True)
 # ==========================================
 if selected_sport == "⚽ 축구":
     
-    analyze_button = st.sidebar.button("🚀 전체 데이터 딥-스캔 시작", use_container_width=True)
+    analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🏆 축구 분석 리그 선택")
 
