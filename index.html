@@ -25,42 +25,7 @@
     </head>
     <body>
         <h1>⚽ 글로벌 라이브 승부 예측</h1>
-        <div class="container">
-                <div class="card" onclick="openModal('1536927')">
-                    <div class="league">친선경기</div>
-                    <div class="match">노르웨이 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 스웨덴</div>
-                    <div class="result">🟢 노르웨이 승 (예측)</div>
-                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
-                </div>
-                
-                <div class="card" onclick="openModal('1543821')">
-                    <div class="league">친선경기</div>
-                    <div class="match">터키어 <br><span style="font-size:0.7em;color:#888;">vs</span><br> FYR 마케도니아</div>
-                    <div class="result">🟢 터키어 승 (예측)</div>
-                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
-                </div>
-                
-                <div class="card" onclick="openModal('1511733')">
-                    <div class="league">친선경기</div>
-                    <div class="match">오스트리아 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 튀니지</div>
-                    <div class="result">🟢 오스트리아 승 (예측)</div>
-                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
-                </div>
-                
-                <div class="card" onclick="openModal('1537648')">
-                    <div class="league">친선경기</div>
-                    <div class="match">콜롬비아 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 코스타리카</div>
-                    <div class="result">🟢 콜롬비아 승 (예측)</div>
-                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
-                </div>
-                
-                <div class="card" onclick="openModal('1514472')">
-                    <div class="league">친선경기</div>
-                    <div class="match">캐나다 <br><span style="font-size:0.7em;color:#888;">vs</span><br> 우즈베키스탄</div>
-                    <div class="result">🟢 캐나다 승 (예측)</div>
-                    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#00bcd4;">👆 클릭하여 세부 스탯/라인업 보기</div>
-                </div>
-                </div>
+        <div class="container"></div>
 
         <div id="matchModal" class="modal">
             <div class="modal-content">
@@ -81,7 +46,7 @@
 
         <script>
             // 파이썬이 서버에서 가져온 팝업 데이터 JSON 주입!
-            const popupData = {"1536927": {"home": "\ub178\ub974\uc6e8\uc774", "away": "\uc2a4\uc6e8\ub374", "h_poss": 55.0, "a_poss": 45.0, "h_shot": 7.0, "a_shot": 5.0, "h_lineup": ["O. Nyland", "J. Ryerson", "K. Ajer", "T. Heggem", "D. M. Wolfe", "O. Bobb", "S. Berge", "F. Aursnes", "A. Nusa", "A. Sorloth", "J. S. Larsen"], "a_lineup": ["J. Widell Zetterstrom", "G. Lagerbielke", "I. Hien", "E. Smith", "H. Johansson", "L. Bergvall", "J. Karlstrom", "Y. Ayari", "D. Svensson", "G. Nilsson", "A. Elanga"]}, "1543821": {"home": "\ud130\ud0a4\uc5b4", "away": "FYR \ub9c8\ucf00\ub3c4\ub2c8\uc544", "h_poss": 60.0, "a_poss": 40.0, "h_shot": 8.0, "a_shot": 2.0, "h_lineup": ["A. Bayindir", "M. Muldur", "O. Kabak", "C. Soyuncu", "E. Elmali", "S. Ozcan", "O. Kokcu", "O. Aydin", "Y. Akgun", "C. Uzun", "D. Gul"], "a_lineup": ["S. Dimitrievski", "G. Zajkov", "D. Velkovski", "I. Fetai", "S. Despotovski", "A. Elezi", "J. Atanasov", "E. Alioski", "E. Elmas", "B. Miovski", "A. Omeragic"]}, "1511733": {"home": "\uc624\uc2a4\ud2b8\ub9ac\uc544", "away": "\ud280\ub2c8\uc9c0", "h_poss": 59.0, "a_poss": 41.0, "h_shot": 4.0, "a_shot": 2.0, "h_lineup": ["A. Schlager", "S. Posch", "P. Lienhart", "D. Alaba", "K. Laimer", "N. Seiwald", "X. Schlager", "R. Schmid", "M. Gregoritsch", "M. Sabitzer", "M. Arnautovic"], "a_lineup": ["A. Chamakh", "Y. Valery", "M. Talbi", "O. Rekik", "A. Abdi", "R. Khedira", "E. Skhiri", "A. Slimane", "H. Mejbri", "I. Gharbi", "F. Chaouat"]}, "1537648": {"home": "\ucf5c\ub86c\ube44\uc544", "away": "\ucf54\uc2a4\ud0c0\ub9ac\uce74", "h_poss": 67.0, "a_poss": 33.0, "h_shot": 4.0, "a_shot": 3.0, "h_lineup": ["C. Vargas", "S. Arias", "D. Sanchez", "W. Ditta", "J. Mojica", "R. Rios", "G. Puerta", "Andres Gomez", "J. Carrascal", "L. Diaz", "Cucho Hernandez"], "a_lineup": ["P. Sequeira", "H. Quiros", "J. Mitchell", "F. Faerron", "D. Araya", "A. Salazar", "C. Mora", "O. Galo", "A. Soto", "J. Alcocer", "M. Ugalde"]}, "1514472": {"home": "\uce90\ub098\ub2e4", "away": "\uc6b0\uc988\ubca0\ud0a4\uc2a4\ud0c4", "h_poss": 51.0, "a_poss": 49.0, "h_shot": 4.0, "a_shot": 2.0, "h_lineup": ["M. Crepeau", "A. Johnston", "M. Bombito", "D. Cornelius", "R. Laryea", "T. Buchanan", "S. Eustaquio", "I. Kone", "L. Millar", "J. David", "C. Larin"], "a_lineup": ["A. Nematov", "A. Khusanov", "A. Abdullaev", "R. Ashurmatov", "F. Sayfiev", "O. Khamrobekov", "O. Shukurov", "S. Nasrullaev", "A. Ganiev", "O. Urunov", "E. Shomurodov"]}};
+            const popupData = {};
 
             function openModal(id) {
                 const data = popupData[id];
