@@ -7,7 +7,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 둥근 라디오 단추를 완벽히 지우고 제트 블랙 탭 바 형태로 강제 개조
+# 🎨 UI CSS: 배경 삭제, 가로 100% 꽉 채우기, 심플한 밑줄 탭 디자인 적용
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -37,74 +37,73 @@ custom_css = """
 .detail-table td { padding: 6px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 2px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
-/* 💡 핵심 마법: 상단 라디오 단추의 원형 아이콘을 완전 삭제 */
+/* ====================================================
+   💡 핵심: 심플 플랫 네비게이션 탭 (제트블랙 & 밑줄 포인트)
+   ==================================================== */
+/* 1. 라디오 버튼 그룹 전체 껍데기를 투명하게, 하단에 얇은 기준선 추가 */
+.stRadio {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 30px !important;
+}
+
+/* 2. 가로 100% 꽉 채우기 (Gap 제거) */
+div[role="radiogroup"] {
+    display: flex !important;
+    width: 100% !important;
+    border-bottom: 2px solid #222 !important; /* 탭 하단 전체를 잇는 얇은 선 */
+    gap: 0 !important;
+}
+
+/* 3. 개별 탭 버튼 디자인: 배경 투명, 글자 회색, 4등분(flex:1) */
+div[role="radiogroup"] label {
+    flex: 1 !important; 
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important; /* 선택 시 밑줄 들어갈 자리 미리 확보 */
+    border-radius: 0 !important;
+    padding: 12px 0px !important;
+    margin: 0 !important;
+    color: #666666 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transition: color 0.2s, border-bottom-color 0.2s !important;
+}
+
+/* 라디오 동그라미 아이콘 영구 삭제 */
 div[role="radiogroup"] label > div:first-child {
     display: none !important;
 }
 
-/* 상단 탭 바 전체 컨테이너를 완전한 블랙 베이스로 설정 */
-.stRadio {
-    background-color: #000000 !important;
-    padding: 8px !important;
-    border-radius: 14px !important;
-    border: 1px solid #222 !important;
-    margin-bottom: 30px !important;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.5) !important;
-}
-
-/* 탭 정렬 분배 비율 조절 */
-div[role="radiogroup"] {
-    display: flex !important;
-    justify-content: space-between !important;
-    gap: 10px !important;
-    width: 100% !important;
-}
-
-/* 선택 안 된 기본 상태의 블랙 탭 스타일 */
-div[role="radiogroup"] label {
-    flex: 1 !important;
-    background-color: #111318 !important;
-    border: 1px solid #23262f !important;
-    padding: 16px 0px !important;
-    border-radius: 10px !important;
-    cursor: pointer !important;
-    transition: all 0.25s ease !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    color: #888888 !important;
-}
-
-/* 마우스 올렸을 때의 세련된 하이라이트 */
+/* 마우스 올렸을 때 (Hover) */
 div[role="radiogroup"] label:hover {
-    background-color: #191b22 !important;
-    border-color: #444444 !important;
     color: #ffffff !important;
+    background: transparent !important;
 }
 
-/* 💡 핵심 마법 2: 클릭되어 선택된 상태(체크)인 활성 탭의 '블랙버전 네온그린' 하이라이트 효과 */
+/* 4. 선택된 탭 (Active Tab): 글자 흰색, 하단 굵은 밑줄 포인트 */
 div[role="radiogroup"] label:has(input:checked) {
-    background-color: #16181f !important;
-    border-color: #00E676 !important;
-    color: #00E676 !important;
-    box-shadow: inset 0 0 4px rgba(0, 230, 118, 0.2), 0 4px 12px rgba(0,0,0,0.4) !important;
+    color: #ffffff !important; 
+    border-bottom: 3px solid #ffffff !important; /* 활성화된 탭 하단 밑줄 */
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
-/* 텍스트 크기 가독성 대폭 향상 */
+/* 탭 안의 글자 설정 */
 div[role="radiogroup"] label p {
-    font-size: 19px !important;
-    font-weight: 800 !important;
+    font-size: 17px !important;
+    font-weight: bold !important;
     color: inherit !important;
     margin: 0 !important;
     text-align: center !important;
     width: 100% !important;
-    letter-spacing: 0.5px;
 }
 
 @media (max-width: 768px) {
-    .card-box { padding: 15px; margin-bottom: 15px; }
-    .match-txt { font-size: 17px; }
-    div[role="radiogroup"] label { padding: 12px 0px !important; }
     div[role="radiogroup"] label p { font-size: 15px !important; }
 }
 </style>
@@ -220,9 +219,8 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
 # --- 💡 메인 화면 렌더링 ---
-st.markdown("<h2 style='text-align: center; color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.5px;'>📊 PREMIUM SPORTS ANALYTICS BOARD</h2>", unsafe_allow_html=True)
 
-# 💡 대형 제트 블랙 버튼형 라디오 네비게이션 적용
+# 💡 심플 플랫 네비게이션 적용 (가로 100% 꽉 차는 심플 밑줄 탭)
 selected_sport = st.radio(
     "종목 선택", 
     ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"], 
