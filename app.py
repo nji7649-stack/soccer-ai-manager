@@ -134,32 +134,44 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
 st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px;'>🏆 AI 정밀 전력 생성 분석실</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-# 💡 개선 1: 날짜 선택기 최상단 배치
 st.sidebar.markdown("### 📅 검색 날짜 설정")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", datetime.today())
 
-# 💡 개선 2: 분석 시작 버튼을 캘린더 바로 밑에 배치 (가로폭 100% 채움)
-st.sidebar.markdown("<br>", unsafe_allow_html=True) # 살짝 여백 주기
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 analyze_button = st.sidebar.button("🚀 데이터 강제 수집 및 분석 시작", use_container_width=True)
 st.sidebar.markdown("---")
 
 st.sidebar.markdown("### 🏆 분석 리그 선택")
 
-with st.sidebar.expander("🌍 국가대표 매치", expanded=True):
+# 💡 개선: 리그 대거 추가 및 폴더 세분화
+with st.sidebar.expander("🌟 국제 대회 (UEFA/FIFA)", expanded=True):
+    l_2 = st.checkbox("챔피언스리그 (UCL)", value=False)
+    l_3 = st.checkbox("유로파리그 (UEL)", value=False)
     l_1 = st.checkbox("월드컵 (World Cup)", value=False)
-    l_10 = st.checkbox("A매치 친선전", value=True)
+    l_10 = st.checkbox("A매치 친선전", value=False)
 
-with st.sidebar.expander("⚽ 유럽 5대 리그", expanded=True):
+with st.sidebar.expander("⚽ 유럽 주요 1부 리그", expanded=True):
     l_39 = st.checkbox("프리미어리그 (ENG)", value=True)
     l_140 = st.checkbox("라리가 (ESP)", value=True)
     l_135 = st.checkbox("세리에 A (ITA)", value=False)
     l_78 = st.checkbox("분데스리가 (GER)", value=False)
     l_61 = st.checkbox("리그 1 (FRA)", value=False)
+    l_88 = st.checkbox("에레디비시 (NED)", value=False) # 네덜란드 1부 추가
+    l_119 = st.checkbox("스코티시 프리미어십 (SCO)", value=False) # 스코틀랜드 1부 추가
+
+with st.sidebar.expander("📈 유럽 2부 리그", expanded=False):
+    l_40 = st.checkbox("챔피언십 (ENG 2부)", value=False) # 잉글랜드 2부 추가
+    l_141 = st.checkbox("세군다 디비시온 (ESP 2부)", value=False)
 
 with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
-    l_292 = st.checkbox("K리그1 (KOR)", value=False)
+    l_292 = st.checkbox("K리그1 (KOR 1부)", value=False)
+    l_293 = st.checkbox("K리그2 (KOR 2부)", value=False) # K리그2 추가
+    l_98 = st.checkbox("J1리그 (JPN)", value=False)
 
+# 선택된 리그 수집
 selected_leagues = []
+if l_2: selected_leagues.append("2")
+if l_3: selected_leagues.append("3")
 if l_1: selected_leagues.append("1")
 if l_10: selected_leagues.append("10")
 if l_39: selected_leagues.append("39")
@@ -167,13 +179,27 @@ if l_140: selected_leagues.append("140")
 if l_135: selected_leagues.append("135")
 if l_78: selected_leagues.append("78")
 if l_61: selected_leagues.append("61")
+if l_88: selected_leagues.append("88")
+if l_119: selected_leagues.append("119")
+if l_40: selected_leagues.append("40")
+if l_141: selected_leagues.append("141")
 if l_292: selected_leagues.append("292")
+if l_293: selected_leagues.append("293")
+if l_98: selected_leagues.append("98")
 
-LEAGUE_MAP = {"1": "월드컵", "10": "A매치 친선전", "39": "프리미어리그", "140": "라리가", "135": "세리에A", "78": "분데스리가", "61": "리그1", "292": "K리그1"}
+# 리그 번호 매핑 딕셔너리 업데이트
+LEAGUE_MAP = {
+    "2": "챔피언스리그", "3": "유로파리그", "1": "월드컵", "10": "A매치 친선전", 
+    "39": "프리미어리그", "140": "라리가", "135": "세리에A", "78": "분데스리가", "61": "리그1", 
+    "88": "에레디비시", "119": "스코티시 프리미어십", "40": "챔피언십", "141": "세군다 디비시온",
+    "292": "K리그1", "293": "K리그2", "98": "J1리그"
+}
+
+# 💡 추춘제(가을 시작) 리그 리스트
+AUTUMN_TO_SPRING_LEAGUES = ["2", "3", "39", "140", "135", "78", "61", "88", "119", "40", "141"]
 
 if 'analyzed_data_list' not in st.session_state: st.session_state['analyzed_data_list'] = []
 
-# 💡 개선 3: 위에서 그린 버튼(analyze_button)이 눌렸을 때 비로소 로직 실행
 if analyze_button:
     if not selected_leagues: st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요."); st.stop()
         
@@ -184,7 +210,8 @@ if analyze_button:
         status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 스탯 수집 중... ({idx+1}/{total_leagues})")
         progress_bar.progress((idx) / total_leagues)
         
-        if league_id in ["39", "140", "135", "78", "61"]: 
+        # 💡 시즌 계산 로직 (유럽 대회/리그 vs 아시아 리그)
+        if league_id in AUTUMN_TO_SPRING_LEAGUES: 
             calc_season_year = str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year)
         else: 
             calc_season_year = str(selected_date.year)
