@@ -6,7 +6,7 @@ import time
 
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 UI 고정 CSS (박스 크기 고정 및 다크모드 전술판)
+# 🎨 UI 고정 CSS
 custom_css = """
 <style>
 .stApp { background-color: #121212; }
@@ -46,7 +46,7 @@ def safe_text(value):
     if not value or str(value).strip() == "": return "N/A"
     return str(value)
 
-# 💡 다크모드 전술판 렌더링 함수
+# 💡 다크모드 전술판
 def draw_dark_tactical_board(team_name, lineup_info):
     if not lineup_info or 'startXI' not in lineup_info:
         return f"<div style='text-align:center; color:#888; padding:10px; height:350px; display:flex; align-items:center; justify-content:center; background:#0a0a0a; border: 2px solid #333; border-radius: 8px;'>{team_name} 명단 미발표</div>"
@@ -77,7 +77,7 @@ def draw_dark_tactical_board(team_name, lineup_info):
     board_html += "</div>"
     return board_html
 
-st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 궁극의 하이브리드 예측 (배당+상대전적+폼)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676;'>🏆 하이브리드 전력 분석 (진행/종료 연동)</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
 st.sidebar.header("🔍 검색 설정")
@@ -89,12 +89,12 @@ LEAGUE_MAP = {
     "61": "리그1", "292": "K리그1"
 }
 
-selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["39", "140", "292"])
+selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["10", "39"])
 
 if 'analyzed_html_list' not in st.session_state:
     st.session_state['analyzed_html_list'] = []
 
-if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
+if st.sidebar.button("🚀 분석 데이터 불러오기"):
     if not selected_leagues:
         st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
         st.stop()
@@ -107,7 +107,7 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
     new_html_list = []
     
     for idx, league_id in enumerate(selected_leagues):
-        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 해외 배당 및 전력 데이터 수집 중... ({idx+1}/{total_leagues})")
+        status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 데이터 수집 중... ({idx+1}/{total_leagues})")
         progress_bar.progress((idx) / total_leagues)
         
         querystring = {"league": league_id, "season": str(selected_date.year), "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
@@ -122,6 +122,8 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
                 away_kr = translate_to_ko(match['teams']['away']['name'])
                 
                 status_short = match['fixture']['status']['short']
+                elapsed_time = match['fixture']['status']['elapsed']
+                
                 is_finished = status_short in ['FT', 'AET', 'PEN']
                 is_live = status_short in ['1H', 'HT', '2H', 'ET', 'P']
                 
@@ -132,17 +134,16 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
                 h_goal = match['goals']['home'] if match['goals']['home'] is not None else 0
                 a_goal = match['goals']['away'] if match['goals']['away'] is not None else 0
                 
+                # 💡 핵심 1: 실시간 진행 상황(스코어보드) 완벽 연동
                 if is_finished:
-                    match_display = f"{home_kr} <span style='color:#00E676; margin:0 15px; font-size:22px;'>{h_goal} : {a_goal}</span> {away_kr}"
+                    match_display = f"{home_kr} <span style='color:#00E676; margin:0 15px; font-size:22px;'>{h_goal} : {a_goal}</span> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[종료됨]</div>"
                 elif is_live:
-                    match_display = f"{home_kr} <span style='color:#ff9800; margin:0 15px; font-size:22px;'>{h_goal} : {a_goal}</span> {away_kr}"
+                    live_label = "하프타임" if status_short == 'HT' else f"전/후반 {elapsed_time}분"
+                    match_display = f"{home_kr} <span style='color:#ff9800; margin:0 15px; font-size:22px;'>{h_goal} : {a_goal}</span> {away_kr} <div style='font-size:12px; color:#ff9800; margin-top:5px;'>🔊 실시간 진행 중 ({live_label})</div>"
                 else:
-                    match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 15px;'>VS</span> {away_kr}"
+                    match_display = f"{home_kr} <span style='color:#888; font-size:16px; margin:0 15px;'>VS</span> {away_kr} <div style='font-size:12px; color:#aaa; margin-top:5px;'>[경기 시작 전]</div>"
 
-                # 💡 핵심 1: Predictions API 호출 (상대 전적, 폼)
                 pred_res = requests.get("https://v3.football.api-sports.io/predictions", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
-                # 💡 핵심 2: Odds API 호출 (실제 해외 배당률)
-                odds_res = requests.get("https://v3.football.api-sports.io/odds", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 lineup_data = requests.get("https://v3.football.api-sports.io/fixtures/lineups", headers=HEADERS, params={"fixture": fix_id}).json().get('response', [])
                 
                 if not pred_res: continue
@@ -150,47 +151,29 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
                 pred_data = pred_res[0]
                 comparison = pred_data.get('comparison', {})
                 
-                # 상대전적(H2H) 및 최근 폼(Form)
                 form_h = safe_text(comparison.get('form', {}).get('home'))
                 form_a = safe_text(comparison.get('form', {}).get('away'))
                 h2h_h = safe_text(comparison.get('h2h', {}).get('home'))
                 h2h_a = safe_text(comparison.get('h2h', {}).get('away'))
 
-                # 배당률(Odds) 파싱 로직
-                odds_h, odds_d, odds_a = 0.0, 0.0, 0.0
-                if odds_res:
-                    bookmakers = odds_res[0].get('bookmakers', [])
-                    if bookmakers:
-                        bets = bookmakers[0].get('bets', [])
-                        for bet in bets:
-                            if bet['name'] == 'Match Winner': # 승무패 배당
-                                for val in bet['values']:
-                                    if str(val['value']) == 'Home': odds_h = float(val['odd'])
-                                    elif str(val['value']) == 'Draw': odds_d = float(val['odd'])
-                                    elif str(val['value']) == 'Away': odds_a = float(val['odd'])
-                                break
+                form_h_val = safe_num(form_h)
+                form_a_val = safe_num(form_a)
+                h2h_h_val = safe_num(h2h_h)
+                h2h_a_val = safe_num(h2h_a)
                 
-                # 💡 딥러닝 + 배당 하이브리드 예측 로직
-                # 배당이 있으면 배당 기반 우선 판단, 없으면 API AI 확률 사용
-                pred_winner = "none"
-                if odds_h > 0 and odds_a > 0:
-                    # 배당이 낮을수록 승리 확률이 높음
-                    if odds_h < odds_a - 0.3: # 홈이 확실한 정배
-                        pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 유력 (정배당)"
-                    elif odds_a < odds_h - 0.3: # 원정이 확실한 정배
-                        pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 유력 (정배당)"
-                    else: # 배당 차이가 0.3 이하일 때 -> 상대 전적(H2H)과 폼(Form)으로 타이브레이커
-                        if safe_num(h2h_h) > safe_num(h2h_a) or safe_num(form_h) > safe_num(form_a):
-                            pred_winner, win_pick = "home", f"🟢 {home_kr} 약우세 (전적/폼 반영)"
-                        elif safe_num(h2h_a) > safe_num(h2h_h) or safe_num(form_a) > safe_num(form_h):
-                            pred_winner, win_pick = "away", f"🔵 {away_kr} 약우세 (전적/폼 반영)"
-                        else:
-                            pred_winner, win_pick = "draw", "🟡 초박빙 무승부 (배당/전적 동률)"
+                # 💡 핵심 2: 배당 의존도 축소 -> 전력 지표(폼 + 상대 전적) 기반 강력한 자체 분석
+                # 상대 전적과 최근 폼의 종합 점수를 계산 (상대 전적 60% + 최근 폼 40%)
+                total_h_score = (h2h_h_val * 0.6) + (form_h_val * 0.4)
+                total_a_score = (h2h_a_val * 0.6) + (form_a_val * 0.4)
+
+                if total_h_score == 0 and total_a_score == 0:
+                    pred_winner, win_pick = "none", "⚠️ 데이터 수집 불가 (분석 패스)"
+                elif total_h_score > total_a_score:
+                    pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 우세 (전력 분석)"
+                elif total_a_score > total_h_score:
+                    pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 우세 (전력 분석)"
                 else:
-                    # 배당이 아직 안 뜬 경기는 상대 전적(H2H)과 최근 폼(Form)만으로 분석
-                    if safe_num(h2h_h) > safe_num(h2h_a): pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 우세 (상대전적 우위)"
-                    elif safe_num(h2h_a) > safe_num(h2h_h): pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 우세 (상대전적 우위)"
-                    else: pred_winner, win_pick = "none", "⚠️ 데이터 수집 불가 (분석 패스)"
+                    pred_winner, win_pick = "draw", "🟡 팽팽한 무승부 예상"
 
                 # 종료 경기 채점
                 if is_finished and pred_winner != "none":
@@ -200,11 +183,8 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
                     win_pick += " <span style='color:#ff9800;'>(적중)</span>" if actual == pred_winner else " <span style='color:#ff5252;'>(미적중)</span>"
                         
                 # UI 데이터 조합
-                odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 발매 전"
-                
-                stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br>"
-                stat_box += f"<span style='color:#aaa;'>상대 전적:</span> {home_kr} <b>{h2h_h}</b> vs <b>{h2h_a}</b> {away_kr}<br>"
-                stat_box += f"<span style='color:#aaa;'>최근 폼:</span> {home_kr} <b>{form_h}</b> vs <b>{form_a}</b> {away_kr}"
+                stat_box = f"<span style='color:#aaa;'>최근 5경기 폼(Form):</span> {home_kr} <b>{form_h}</b> vs <b>{form_a}</b> {away_kr}<br>"
+                stat_box += f"<span style='color:#aaa;'>상대 전적(H2H) 승률:</span> {home_kr} <b>{h2h_h}</b> vs <b>{h2h_a}</b> {away_kr}"
 
                 # 전문가 코멘트 및 오버/언더
                 advice = translate_to_ko(pred_data['predictions'].get('advice', '데이터 분석 중'))
@@ -218,7 +198,6 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
                 else:
                     over_under = "🔥 기준점 산정 중"
 
-                # 다크모드 전술판 렌더링
                 h_pitch_html = draw_dark_tactical_board(home_kr, lineup_data[0] if lineup_data else None)
                 a_pitch_html = draw_dark_tactical_board(away_kr, lineup_data[1] if lineup_data and len(lineup_data)>1 else None)
 
@@ -236,14 +215,14 @@ if st.sidebar.button("🚀 배당 기반 하이브리드 분석 시작"):
             pass
 
     progress_bar.progress(1.0)
-    status_text.text("✅ 하이브리드 엔진 분석 완료!")
+    status_text.text("✅ 하이브리드 전력 분석 완료!")
     time.sleep(1)
     status_text.empty()
     progress_bar.empty()
 
     st.session_state['analyzed_html_list'] = new_html_list
 
-# 화면 출력 (들여쓰기 에러 완벽 차단)
+# 화면 출력
 if st.session_state['analyzed_html_list']:
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_html_list']):
