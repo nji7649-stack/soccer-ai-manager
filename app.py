@@ -7,7 +7,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 배경 삭제, 가로 100% 꽉 채우기, 심플한 밑줄 탭 디자인 적용
+# 🎨 UI CSS: 상단 탭 CSS 제거, 원래의 깔끔한 다크 테마로 복구
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -37,74 +37,9 @@ custom_css = """
 .detail-table td { padding: 6px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 2px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
-/* ====================================================
-   💡 핵심: 심플 플랫 네비게이션 탭 (제트블랙 & 밑줄 포인트)
-   ==================================================== */
-/* 1. 라디오 버튼 그룹 전체 껍데기를 투명하게, 하단에 얇은 기준선 추가 */
-.stRadio {
-    background: transparent !important;
-    padding: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin-bottom: 30px !important;
-}
-
-/* 2. 가로 100% 꽉 채우기 (Gap 제거) */
-div[role="radiogroup"] {
-    display: flex !important;
-    width: 100% !important;
-    border-bottom: 2px solid #222 !important; /* 탭 하단 전체를 잇는 얇은 선 */
-    gap: 0 !important;
-}
-
-/* 3. 개별 탭 버튼 디자인: 배경 투명, 글자 회색, 4등분(flex:1) */
-div[role="radiogroup"] label {
-    flex: 1 !important; 
-    background: transparent !important;
-    border: none !important;
-    border-bottom: 3px solid transparent !important; /* 선택 시 밑줄 들어갈 자리 미리 확보 */
-    border-radius: 0 !important;
-    padding: 12px 0px !important;
-    margin: 0 !important;
-    color: #666666 !important;
-    cursor: pointer !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    transition: color 0.2s, border-bottom-color 0.2s !important;
-}
-
-/* 라디오 동그라미 아이콘 영구 삭제 */
-div[role="radiogroup"] label > div:first-child {
-    display: none !important;
-}
-
-/* 마우스 올렸을 때 (Hover) */
-div[role="radiogroup"] label:hover {
-    color: #ffffff !important;
-    background: transparent !important;
-}
-
-/* 4. 선택된 탭 (Active Tab): 글자 흰색, 하단 굵은 밑줄 포인트 */
-div[role="radiogroup"] label:has(input:checked) {
-    color: #ffffff !important; 
-    border-bottom: 3px solid #ffffff !important; /* 활성화된 탭 하단 밑줄 */
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-/* 탭 안의 글자 설정 */
-div[role="radiogroup"] label p {
-    font-size: 17px !important;
-    font-weight: bold !important;
-    color: inherit !important;
-    margin: 0 !important;
-    text-align: center !important;
-    width: 100% !important;
-}
-
 @media (max-width: 768px) {
-    div[role="radiogroup"] label p { font-size: 15px !important; }
+    .card-box { padding: 15px; margin-bottom: 15px; }
+    .match-txt { font-size: 17px; }
 }
 </style>
 """
@@ -218,19 +153,23 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ AI 자체 데이터 수집 가동</div>" if is_custom else ""
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
-# --- 💡 메인 화면 렌더링 ---
 
-# 💡 심플 플랫 네비게이션 적용 (가로 100% 꽉 차는 심플 밑줄 탭)
-selected_sport = st.radio(
-    "종목 선택", 
-    ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"], 
-    horizontal=True, 
+# --- 💡 메인 화면 타이틀 ---
+st.markdown("<h2 style='text-align: center; color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 30px; letter-spacing: -0.5px;'>📊 PREMIUM SPORTS ANALYTICS BOARD</h2>", unsafe_allow_html=True)
+
+
+# --- 💡 사이드바 (종목, 날짜, 리그 등 모든 설정 일원화) ---
+st.sidebar.markdown("### 🏆 스포츠 종목 선택")
+# 셀렉트박스로 종목 선택 (가장 깔끔하고 공간 차지 적음)
+selected_sport = st.sidebar.selectbox(
+    "분석할 스포츠를 고르세요",
+    ("⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"),
     label_visibility="collapsed"
 )
+st.sidebar.markdown("---")
 
-# 공통 사이드바
 st.sidebar.markdown("### 📅 검색 날짜 설정")
-selected_date = st.sidebar.date_input("날짜를 선택하세요", datetime.today())
+selected_date = st.sidebar.date_input("날짜를 선택하세요", datetime.today(), label_visibility="collapsed")
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
 
@@ -241,7 +180,7 @@ if selected_sport == "⚽ 축구":
     
     analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🏆 축구 분석 리그 선택")
+    st.sidebar.markdown("### ⚽ 축구 리그 선택")
 
     with st.sidebar.expander("🌟 국제 대회 (UEFA/FIFA)", expanded=True):
         l_2 = st.checkbox("챔피언스리그 (UCL)", value=False)
@@ -249,7 +188,7 @@ if selected_sport == "⚽ 축구":
         l_1 = st.checkbox("월드컵 (World Cup)", value=False)
         l_10 = st.checkbox("A매치 친선전", value=True)
 
-    with st.sidebar.expander("⚽ 유럽 주요 1부 리그", expanded=True):
+    with st.sidebar.expander("🌍 유럽 주요 1부 리그", expanded=True):
         l_39 = st.checkbox("프리미어리그 (ENG)", value=True)
         l_140 = st.checkbox("라리가 (ESP)", value=True)
         l_135 = st.checkbox("세리에 A (ITA)", value=False)
@@ -467,12 +406,12 @@ if selected_sport == "⚽ 축구":
     elif st.session_state.get('analyzed_data_list') == []: st.markdown("")
 
 # ==========================================
-# ⚾ 야구 로직 (추후 업데이트 예정)
+# ⚾ 야구 로직
 # ==========================================
 elif selected_sport == "⚾ 야구":
     st.sidebar.button("🚀 야구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🏆 야구 리그 선택 (준비중)")
+    st.sidebar.markdown("### ⚾ 야구 리그 선택 (준비중)")
     st.sidebar.checkbox("KBO (한국 프로야구)", value=True, disabled=True)
     st.sidebar.checkbox("MLB (메이저리그)", value=False, disabled=True)
     st.sidebar.checkbox("NPB (일본 프로야구)", value=False, disabled=True)
@@ -481,12 +420,12 @@ elif selected_sport == "⚾ 야구":
     st.info("⚾ 야구 전용 데이터 API (선발투수 성적, 불펜 방어율, 구장 팩터 등) 연동 작업을 준비 중입니다. 기대해 주세요!")
 
 # ==========================================
-# 🏀 농구 로직 (추후 업데이트 예정)
+# 🏀 농구 로직
 # ==========================================
 elif selected_sport == "🏀 농구":
     st.sidebar.button("🚀 농구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🏆 농구 리그 선택 (준비중)")
+    st.sidebar.markdown("### 🏀 농구 리그 선택 (준비중)")
     st.sidebar.checkbox("NBA (미국 프로농구)", value=True, disabled=True)
     st.sidebar.checkbox("KBL (한국 프로농구)", value=False, disabled=True)
     
@@ -494,12 +433,12 @@ elif selected_sport == "🏀 농구":
     st.warning("🏀 농구 전용 데이터 API (결장자, 상대 전적, 페이스 등) 연동 작업을 준비 중입니다.")
 
 # ==========================================
-# 🏐 배구 로직 (추후 업데이트 예정)
+# 🏐 배구 로직
 # ==========================================
 elif selected_sport == "🏐 배구":
     st.sidebar.button("🚀 배구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🏆 배구 리그 선택 (준비중)")
+    st.sidebar.markdown("### 🏐 배구 리그 선택 (준비중)")
     st.sidebar.checkbox("V-리그 (남/여)", value=True, disabled=True)
     
     st.markdown("<br><br>", unsafe_allow_html=True)
