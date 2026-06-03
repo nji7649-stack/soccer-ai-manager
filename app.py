@@ -146,6 +146,8 @@ with st.sidebar.expander("⚽ 유럽 5대 리그", expanded=True):
 with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
     l_292 = st.checkbox("K리그1 (KOR)", value=False)
 
+selected_date = st.sidebar.date_input("📅 날짜 선택", datetime.today())
+
 selected_leagues = []
 if l_1: selected_leagues.append("1")
 if l_10: selected_leagues.append("10")
@@ -235,27 +237,27 @@ if st.sidebar.button("🚀 정밀 분석 시작"):
                                     elif str(val['value']) == 'Away': odds_a = float(val['odd'])
                                 break
                 
-                # 💡 핵심 1: 역배당(꿀픽) 탐지 로직 (공격력+폼+상대전적 합산 파워)
+                # 💡 역배당(꿀픽) 탐지 로직
                 h_power = h_vals[0] + h_vals[2] + h_vals[3]
                 a_power = a_vals[0] + a_vals[2] + a_vals[3]
 
                 pred_winner = "none"
                 if odds_h > 0 and odds_a > 0:
-                    if odds_h < odds_a - 0.3: # 홈이 정배당일 때
-                        if a_power > h_power + 15: # 원정팀 데이터가 압도적이면 역배 픽
+                    if odds_h < odds_a - 0.3:
+                        if a_power > h_power + 15:
                             pred_winner, win_pick, pick_color = "away", f"🚨 역배 꿀픽: {away_kr} 승", "#ff5252"
                         else:
                             pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 승 (정배당)", "#00E676"
-                    elif odds_a < odds_h - 0.3: # 원정이 정배당일 때
-                        if h_power > a_power + 15: # 홈팀 데이터가 압도적이면 역배 픽
+                    elif odds_a < odds_h - 0.3:
+                        if h_power > a_power + 15:
                             pred_winner, win_pick, pick_color = "home", f"🚨 역배 꿀픽: {home_kr} 승", "#ff5252"
                         else:
                             pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 승 (정배당)", "#4FC3F7"
-                    else: # 배당이 비슷할 때
+                    else:
                         if h_power > a_power + 5: pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 약우세 (전력기반)", "#00E676"
                         elif a_power > h_power + 5: pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 약우세 (전력기반)", "#4FC3F7"
                         else: pred_winner, win_pick, pick_color = "draw", "🟡 초박빙 무승부", "#ff9800"
-                else: # 배당이 아직 안나왔을 때
+                else:
                     if h_power > a_power + 10: pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 전력 우세", "#00E676"
                     elif a_power > h_power + 10: pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 전력 우세", "#4FC3F7"
                     else: pred_winner, win_pick, pick_color = "none", "⚠️ 데이터 박빙 (패스)", "#888888"
@@ -273,16 +275,15 @@ if st.sidebar.button("🚀 정밀 분석 시작"):
                 advice = translate_to_ko(pred_data['predictions'].get('advice', '데이터 분석 중'))
                 control_pick = f"🧠 AI 요약: {advice}"
                 
-                # 💡 핵심 2: 2.5 언오버 강제 산정 로직
+                # 💡 2.5 언오버 강제 산정 로직
                 under_over_val = pred_data['predictions'].get('under_over', '')
                 if under_over_val:
                     uo_text = "언더 (저득점)" if "-" in under_over_val else "오버 (다득점)"
                     clean_val = under_over_val.replace('-', '').replace('+', '')
                     over_under = f"🔥 API 기준점: {clean_val} {uo_text}"
                 else:
-                    # 기준점이 없을 때, 양 팀 득점기대치(Goals)와 공격력(Att) 합산
                     goal_expect = h_vals[4] + a_vals[4] + h_vals[0] + a_vals[0]
-                    if goal_expect >= 190: # 400점 만점 중 190점 이상이면 오버 예측
+                    if goal_expect >= 190:
                         over_under = "🔥 2.5 기준 오버 (자체예측)"
                     else:
                         over_under = "❄️ 2.5 기준 언더 (자체예측)"
