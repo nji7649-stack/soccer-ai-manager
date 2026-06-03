@@ -7,7 +7,7 @@ import math
 
 st.set_page_config(page_title="AI 축구 분석실", page_icon="⚽", layout="wide")
 
-# 🎨 UI CSS: 모바일 반응형(@media) 쿼리 및 유연한 레이아웃 적용
+# 🎨 UI CSS: 모바일 반응형 및 사이드바 최적화
 custom_css = """
 <style>
 .stApp { background-color: #121212; }
@@ -19,15 +19,14 @@ custom_css = """
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
 .match-txt { color: #ffffff; font-size: 19px; font-weight: bold; text-align: center; margin-bottom: 12px; line-height: 1.3; }
 .stat-bg { background-color: #2a2a2a; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 13.5px; line-height: 1.7; text-align: center; margin-bottom: 10px; }
-.predict-txt { color: #00E676; font-size: 15px; font-weight: bold; text-align: center; border-top: 1px dashed #555; padding-top: 15px; line-height: 1.6; }
+.predict-txt { font-size: 15px; font-weight: bold; text-align: center; border-top: 1px dashed #555; padding-top: 15px; line-height: 1.6; }
 
-/* 라인업 테이블 디자인 */
 .table-wrapper { overflow-x: auto; margin-top: 10px; }
 .lineup-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; }
 .lineup-table th { background-color: #333; padding: 8px; text-align: center; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }
 .lineup-table td { padding: 6px 8px; border-bottom: 1px solid #2a2a2a; vertical-align: top; text-align: center; white-space: nowrap; }
 
-/* 📱 스마트폰 모바일 화면 최적화 */
+/* 모바일 화면 최적화 */
 @media (max-width: 768px) {
     .card-box { padding: 15px; margin-bottom: 15px; }
     .match-txt { font-size: 17px; }
@@ -51,7 +50,6 @@ def safe_num(value):
     try: return float(str(value).replace('%', '').replace('+', '').replace('-', ''))
     except: return 0.0
 
-# 💡 모바일 최적화 라인업 테이블 (가로 스크롤 래퍼 포함)
 def get_lineup_table(home_kr, away_kr, lineup_data):
     if not lineup_data or len(lineup_data) < 2:
         return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표</div>"
@@ -63,16 +61,13 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
     h_players += [""] * (max_len - len(h_players))
     a_players += [""] * (max_len - len(a_players))
 
-    # table-wrapper 클래스로 모바일 화면 이탈 방지
     table_html = "<div class='table-wrapper'><table class='lineup-table'>"
     table_html += f"<tr><th style='color:#4FC3F7;'>{home_kr}</th><th style='color:#EF5350;'>{away_kr}</th></tr>"
     for h_player, a_player in zip(h_players, a_players):
         table_html += f"<tr><td>{h_player}</td><td>{a_player}</td></tr>"
     table_html += "</table></div>"
-    
     return table_html
 
-# 💡 모바일 반응형 HTML 레이더 차트 (viewBox 적용)
 def create_html_radar(h_vals, a_vals, home_kr, away_kr):
     if sum(h_vals) < 10 and sum(a_vals) < 10:
         return "<div style='text-align:center; padding:30px; color:#ff5252; background:#111; border-radius:8px;'>⚠️ 전력 데이터 부족</div>"
@@ -117,7 +112,6 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr):
     h_poly = get_polygon(h_vals, "#4FC3F7", "rgba(79, 195, 247, 0.3)") 
     a_poly = get_polygon(a_vals, "#EF5350", "rgba(239, 83, 80, 0.3)") 
 
-    # width:100%, max-width 처리로 폰 화면에서도 유연하게 줄어듦
     html = f"""
     <div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:15px;'>
         <div style='font-size:12px; color:#fff; margin-bottom:15px; font-weight:bold; text-align:center;'>
@@ -132,24 +126,42 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr):
     """
     return html
 
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px;'>🏆 실시간 AI 승부 예측실</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px;'>🏆 AI 역배당 탐지 & 분석실</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-st.sidebar.header("🔍 검색 설정")
-selected_date = st.sidebar.date_input("📅 날짜 선택", datetime.today())
+# 💡 사이드바 깔끔하게 폴더형(Expander)으로 개편
+st.sidebar.markdown("### 🏆 분석 리그 선택")
 
-LEAGUE_MAP = {
-    "1": "월드컵", "10": "A매치 친선전", "39": "프리미어리그", 
-    "140": "라리가", "135": "세리에A", "78": "분데스리가", 
-    "61": "리그1", "292": "K리그1"
-}
+with st.sidebar.expander("🌍 국가대표 매치", expanded=True):
+    l_1 = st.checkbox("월드컵 (World Cup)", value=False)
+    l_10 = st.checkbox("A매치 친선전", value=True)
 
-selected_leagues = st.sidebar.multiselect("⚽ 리그 선택", options=list(LEAGUE_MAP.keys()), format_func=lambda x: LEAGUE_MAP[x], default=["39", "140", "135"])
+with st.sidebar.expander("⚽ 유럽 5대 리그", expanded=True):
+    l_39 = st.checkbox("프리미어리그 (ENG)", value=True)
+    l_140 = st.checkbox("라리가 (ESP)", value=True)
+    l_135 = st.checkbox("세리에 A (ITA)", value=False)
+    l_78 = st.checkbox("분데스리가 (GER)", value=False)
+    l_61 = st.checkbox("리그 1 (FRA)", value=False)
+
+with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
+    l_292 = st.checkbox("K리그1 (KOR)", value=False)
+
+selected_leagues = []
+if l_1: selected_leagues.append("1")
+if l_10: selected_leagues.append("10")
+if l_39: selected_leagues.append("39")
+if l_140: selected_leagues.append("140")
+if l_135: selected_leagues.append("135")
+if l_78: selected_leagues.append("78")
+if l_61: selected_leagues.append("61")
+if l_292: selected_leagues.append("292")
+
+LEAGUE_MAP = {"1": "월드컵", "10": "A매치 친선전", "39": "프리미어리그", "140": "라리가", "135": "세리에A", "78": "분데스리가", "61": "리그1", "292": "K리그1"}
 
 if 'analyzed_data_list' not in st.session_state:
     st.session_state['analyzed_data_list'] = []
 
-if st.sidebar.button("🚀 정밀 분석 시작 (모바일 지원)"):
+if st.sidebar.button("🚀 정밀 분석 시작"):
     if not selected_leagues:
         st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
         st.stop()
@@ -209,6 +221,7 @@ if st.sidebar.button("🚀 정밀 분석 시작 (모바일 지원)"):
                 radar_html = create_html_radar(h_vals, a_vals, home_kr, away_kr)
                 lineup_html = get_lineup_table(home_kr, away_kr, lineup_data)
 
+                # 배당 파싱
                 odds_h, odds_d, odds_a = 0.0, 0.0, 0.0
                 if odds_res:
                     bookmakers = odds_res[0].get('bookmakers', [])
@@ -222,45 +235,64 @@ if st.sidebar.button("🚀 정밀 분석 시작 (모바일 지원)"):
                                     elif str(val['value']) == 'Away': odds_a = float(val['odd'])
                                 break
                 
+                # 💡 핵심 1: 역배당(꿀픽) 탐지 로직 (공격력+폼+상대전적 합산 파워)
+                h_power = h_vals[0] + h_vals[2] + h_vals[3]
+                a_power = a_vals[0] + a_vals[2] + a_vals[3]
+
                 pred_winner = "none"
                 if odds_h > 0 and odds_a > 0:
-                    if odds_h < odds_a - 0.3: pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 유력 (정배당)"
-                    elif odds_a < odds_h - 0.3: pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 유력 (정배당)"
-                    else:
-                        if h_vals[2] > a_vals[2] or h_vals[3] > a_vals[3]: pred_winner, win_pick = "home", f"🟢 {home_kr} 약우세 (전적/폼 반영)"
-                        elif a_vals[2] > h_vals[2] or a_vals[3] > h_vals[3]: pred_winner, win_pick = "away", f"🔵 {away_kr} 약우세 (전적/폼 반영)"
-                        else: pred_winner, win_pick = "draw", "🟡 초박빙 무승부 배당"
-                else:
-                    if h_vals[3] > a_vals[3]: pred_winner, win_pick = "home", f"🟢 {home_kr} 승리 우세"
-                    elif a_vals[3] > h_vals[3]: pred_winner, win_pick = "away", f"🔵 {away_kr} 승리 우세"
-                    else: pred_winner, win_pick = "none", "⚠️ 데이터 수집 불가 (패스)"
+                    if odds_h < odds_a - 0.3: # 홈이 정배당일 때
+                        if a_power > h_power + 15: # 원정팀 데이터가 압도적이면 역배 픽
+                            pred_winner, win_pick, pick_color = "away", f"🚨 역배 꿀픽: {away_kr} 승", "#ff5252"
+                        else:
+                            pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 승 (정배당)", "#00E676"
+                    elif odds_a < odds_h - 0.3: # 원정이 정배당일 때
+                        if h_power > a_power + 15: # 홈팀 데이터가 압도적이면 역배 픽
+                            pred_winner, win_pick, pick_color = "home", f"🚨 역배 꿀픽: {home_kr} 승", "#ff5252"
+                        else:
+                            pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 승 (정배당)", "#4FC3F7"
+                    else: # 배당이 비슷할 때
+                        if h_power > a_power + 5: pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 약우세 (전력기반)", "#00E676"
+                        elif a_power > h_power + 5: pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 약우세 (전력기반)", "#4FC3F7"
+                        else: pred_winner, win_pick, pick_color = "draw", "🟡 초박빙 무승부", "#ff9800"
+                else: # 배당이 아직 안나왔을 때
+                    if h_power > a_power + 10: pred_winner, win_pick, pick_color = "home", f"🟢 {home_kr} 전력 우세", "#00E676"
+                    elif a_power > h_power + 10: pred_winner, win_pick, pick_color = "away", f"🔵 {away_kr} 전력 우세", "#4FC3F7"
+                    else: pred_winner, win_pick, pick_color = "none", "⚠️ 데이터 박빙 (패스)", "#888888"
 
                 if is_finished and pred_winner != "none":
                     if h_goal > a_goal: actual = "home"
                     elif a_goal > h_goal: actual = "away"
                     else: actual = "draw"
-                    win_pick += " <span style='color:#ff9800;'>(적중)</span>" if actual == pred_winner else " <span style='color:#ff5252;'>(미적중)</span>"
+                    win_pick += " (적중)" if actual == pred_winner else " (미적중)"
                         
                 odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                 stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br>"
-                stat_box += f"<span style='color:#aaa;'>최근 폼:</span> {home_kr} <b>{h_vals[2]}%</b> vs <b>{a_vals[2]}%</b> {away_kr}"
+                stat_box += f"<span style='color:#aaa;'>공+폼+전적 합산:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
 
                 advice = translate_to_ko(pred_data['predictions'].get('advice', '데이터 분석 중'))
-                control_pick = f"🧠 AI: {advice}"
+                control_pick = f"🧠 AI 요약: {advice}"
                 
+                # 💡 핵심 2: 2.5 언오버 강제 산정 로직
                 under_over_val = pred_data['predictions'].get('under_over', '')
                 if under_over_val:
-                    uo_text = "언더" if "-" in under_over_val else "오버"
+                    uo_text = "언더 (저득점)" if "-" in under_over_val else "오버 (다득점)"
                     clean_val = under_over_val.replace('-', '').replace('+', '')
-                    over_under = f"🔥 기준점 {clean_val} {uo_text}"
+                    over_under = f"🔥 API 기준점: {clean_val} {uo_text}"
                 else:
-                    over_under = "🔥 기준점 산정 중"
+                    # 기준점이 없을 때, 양 팀 득점기대치(Goals)와 공격력(Att) 합산
+                    goal_expect = h_vals[4] + a_vals[4] + h_vals[0] + a_vals[0]
+                    if goal_expect >= 190: # 400점 만점 중 190점 이상이면 오버 예측
+                        over_under = "🔥 2.5 기준 오버 (자체예측)"
+                    else:
+                        over_under = "❄️ 2.5 기준 언더 (자체예측)"
 
                 new_data_list.append({
                     "league": top_league_display,
                     "match_display": match_display,
                     "stat_box": stat_box,
                     "win_pick": win_pick, 
+                    "pick_color": pick_color,
                     "control_pick": control_pick, 
                     "over_under": over_under,
                     "radar_html": radar_html,
@@ -277,7 +309,7 @@ if st.sidebar.button("🚀 정밀 분석 시작 (모바일 지원)"):
 
     st.session_state['analyzed_data_list'] = new_data_list
 
-# 화면 출력 (모바일 자동 스태킹 최적화)
+# 화면 출력
 if st.session_state.get('analyzed_data_list'):
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_data_list']):
@@ -290,9 +322,9 @@ if st.session_state.get('analyzed_data_list'):
                         <div class='match-txt'>{data['match_display']}</div>
                         <div class='stat-bg'>{data['stat_box']}</div>
                     </div>
-                    <div class='predict-txt'>
+                    <div class='predict-txt' style='color: {data['pick_color']};'>
                         🎯 {data['win_pick']}<br>
-                        <span style='font-size: 14px; font-weight: normal; color: #00E676;'>
+                        <span style='font-size: 14px; font-weight: normal; color: #aaa;'>
                         ⚔️ {data['control_pick']}<br>{data['over_under']}
                         </span>
                     </div>
