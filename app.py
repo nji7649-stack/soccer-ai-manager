@@ -153,10 +153,6 @@ with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
 
 selected_date = st.sidebar.date_input("📅 날짜 선택", datetime.today())
 
-# 💡 핵심: 유럽 축구 추춘제 시즌 자동 감지 로직
-# 선택한 월(Month)이 7월(7) 미만이면, 시즌은 작년 연도(예: 2026년 5월 -> 2025시즌)로 세팅!
-target_season_year = str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year)
-
 selected_leagues = []
 if l_1: selected_leagues.append("1")
 if l_10: selected_leagues.append("10")
@@ -181,7 +177,12 @@ if st.sidebar.button("🚀 데이터 강제 수집 및 분석 시작"):
         status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 스탯 수집 중... ({idx+1}/{total_leagues})")
         progress_bar.progress((idx) / total_leagues)
         
-        # 💡 API 요청 시 스마트 감지된 'target_season_year'를 전송!
+        # 💡 핵심 V23.1: 리그별 시즌(Season) 독립 계산 로직 (추춘제 vs 춘추제 완벽 분리)
+        if league_id in ["39", "140", "135", "78", "61"]: # 유럽 5대 리그 (가을 시작 ~ 이듬해 봄 종료)
+            target_season_year = str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year)
+        else: # K리그, 국가대표 매치 등 (봄 시작 ~ 가을 종료, 또는 단일 연도)
+            target_season_year = str(selected_date.year)
+            
         querystring = {"league": league_id, "season": target_season_year, "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
         
         try:
