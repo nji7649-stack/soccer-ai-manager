@@ -7,9 +7,12 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 상단 탭 CSS 제거, 원래의 깔끔한 다크 테마로 복구
+# 🎨 UI CSS: Font Awesome 아이콘 주입 및 커스텀 다크 원형 탭 디자인
 custom_css = """
 <style>
+/* 💡 Font Awesome 아이콘 라이브러리 불러오기 */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
 .stApp { background-color: #0e1117; }
 .card-box {
     background-color: #1e1e1e; padding: 20px; border-radius: 12px;
@@ -37,9 +40,95 @@ custom_css = """
 .detail-table td { padding: 6px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 2px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
+
+/* ====================================================
+   💡 핵심: 사이드바 원형 다크 아이콘 탭 (커스텀 CSS)
+   ==================================================== */
+/* 스트림릿 기본 동그라미 숨기기 */
+[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
+
+/* 가로 정렬 및 간격 조정 */
+[data-testid="stSidebar"] div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 5px !important;
+    width: 100% !important;
+    margin-bottom: 10px;
+}
+
+/* 개별 탭을 버튼 컨테이너로 세팅 */
+[data-testid="stSidebar"] div[role="radiogroup"] label {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 5px 0 !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+}
+
+/* 💡 마법: 라벨 '앞'에 가상의 검은색 원형 블록을 만들고, 그 안에 흰색 아이콘 렌더링 */
+[data-testid="stSidebar"] div[role="radiogroup"] label::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 22px;
+    color: #ffffff;             /* 기본: 하얀색 아이콘 */
+    background-color: #151515;  /* 기본: 검은색 원형 배경 */
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    border: 2px solid #333;     /* 테두리 */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+
+/* 각 종목별 아이콘 유니코드 (축구, 야구, 농구, 배구) */
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } 
+
+/* 마우스 호버(올렸을 때) 효과 */
+[data-testid="stSidebar"] div[role="radiogroup"] label:hover::before {
+    border-color: #666;
+    transform: translateY(-2px);
+}
+
+/* 💡 선택되었을 때 (Active): 검은색 배경 유지, 테두리와 아이콘만 네온 그린으로 발광 */
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before {
+    border-color: #00E676 !important;
+    color: #00E676 !important;
+    background-color: #151515 !important;
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important;
+}
+
+/* 아래쪽 한글 텍스트 디자인 */
+[data-testid="stSidebar"] div[role="radiogroup"] label p {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #888 !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+
+/* 선택되었을 때 텍스트 색상도 그린으로 변경 */
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p {
+    color: #00E676 !important;
+}
+
 @media (max-width: 768px) {
     .card-box { padding: 15px; margin-bottom: 15px; }
     .match-txt { font-size: 17px; }
+    [data-testid="stSidebar"] div[role="radiogroup"] label::before { width: 44px; height: 44px; font-size: 18px; }
+    [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 11px !important; }
 }
 </style>
 """
@@ -153,21 +242,22 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ AI 자체 데이터 수집 가동</div>" if is_custom else ""
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
+# --- 💡 메인 화면 타이틀 (요청하신 대로 프로그램 이름 복구) ---
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V26.5)</h1>", unsafe_allow_html=True)
 
-# --- 💡 메인 화면 타이틀 ---
-st.markdown("<h2 style='text-align: center; color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 30px; letter-spacing: -0.5px;'>📊 PREMIUM SPORTS ANALYTICS BOARD</h2>", unsafe_allow_html=True)
 
-
-# --- 💡 사이드바 (종목, 날짜, 리그 등 모든 설정 일원화) ---
+# --- 💡 사이드바 (종목 원형 아이콘 탭) ---
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
-# 셀렉트박스로 종목 선택 (가장 깔끔하고 공간 차지 적음)
-selected_sport = st.sidebar.selectbox(
-    "분석할 스포츠를 고르세요",
-    ("⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"),
+
+# 텍스트만 넣으면 CSS가 알아서 위에 멋진 폰트어썸 아이콘을 그려줍니다!
+selected_sport = st.sidebar.radio(
+    "종목 선택",
+    ["축구", "야구", "농구", "배구"],
+    horizontal=True,
     label_visibility="collapsed"
 )
-st.sidebar.markdown("---")
 
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 📅 검색 날짜 설정")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", datetime.today(), label_visibility="collapsed")
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
@@ -176,7 +266,7 @@ st.sidebar.markdown("<br>", unsafe_allow_html=True)
 # ==========================================
 # ⚽ 축구 로직
 # ==========================================
-if selected_sport == "⚽ 축구":
+if selected_sport == "축구":
     
     analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
     st.sidebar.markdown("---")
@@ -408,7 +498,7 @@ if selected_sport == "⚽ 축구":
 # ==========================================
 # ⚾ 야구 로직
 # ==========================================
-elif selected_sport == "⚾ 야구":
+elif selected_sport == "야구":
     st.sidebar.button("🚀 야구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### ⚾ 야구 리그 선택 (준비중)")
@@ -422,7 +512,7 @@ elif selected_sport == "⚾ 야구":
 # ==========================================
 # 🏀 농구 로직
 # ==========================================
-elif selected_sport == "🏀 농구":
+elif selected_sport == "농구":
     st.sidebar.button("🚀 농구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🏀 농구 리그 선택 (준비중)")
@@ -435,7 +525,7 @@ elif selected_sport == "🏀 농구":
 # ==========================================
 # 🏐 배구 로직
 # ==========================================
-elif selected_sport == "🏐 배구":
+elif selected_sport == "배구":
     st.sidebar.button("🚀 배구 데이터 딥-스캔 시작", use_container_width=True, disabled=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🏐 배구 리그 선택 (준비중)")
