@@ -37,7 +37,7 @@ custom_css = """
 
 .predict-section { margin-top: auto; border-top: 1px dashed #555; padding-top: 15px; text-align: center; margin-bottom: 15px; }
 .predict-txt { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
-.over-under { font-size: 13px; color: #ddd; font-weight: normal; margin-bottom: 8px; }
+.over-under { font-size: 13px; font-weight: bold; margin-bottom: 8px; } /* 💡 언오버 텍스트 CSS */
 .ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; height: 32px; }
 
 .prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 2px; margin-bottom: 10px; background-color: #333; }
@@ -74,7 +74,6 @@ HEADERS = {'x-apisports-key': FOOTBALL_API_KEY}
 # ==========================================
 # ⚙️ 공통 함수 (번역 사전)
 # ==========================================
-# 💡 핵심: Athletics ➡️ 체육실기 방지 및 완벽한 야구/축구 한글 사전
 CUSTOM_DICT = {
     "Arsenal": "아스날", "Aston Villa": "애스턴 빌라", "Newcastle": "뉴캐슬", "Crystal Palace": "크리스탈 팰리스",
     "Athletics": "애슬레틱스", "Oakland Athletics": "오클랜드", "Oakland": "오클랜드",
@@ -259,7 +258,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.5)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.6)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -316,7 +315,7 @@ if selected_sport == "축구":
             progress_bar.progress((idx) / total_leagues)
             
             calc_season_year = str(selected_date.year - 1) if league_id in AUTUMN_TO_SPRING_LEAGUES and selected_date.month < 7 else str(selected_date.year)
-            querystring = {"league": league_id, "season": calc_season_year, "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
+            querystring = {"league": league_id, "season": calc_season_year, "date": selected_date.strftime('%Y-%m-%d')}
             
             try:
                 res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params=querystring, timeout=10).json()
@@ -332,9 +331,12 @@ if selected_sport == "축구":
                     venue = match['fixture']['venue']['name'] or "미정"
                     status_short = match['fixture']['status']['short']
                     
-                    try: 
-                        utc_time = datetime.strptime(match['fixture']['date'][:16], "%Y-%m-%dT%H:%M")
-                        match_time = (utc_time + timedelta(hours=9)).strftime("%H:%M")
+                    # 💡 핵심: 축구 타임존 +9시간 이중 변환 버그 완벽 수정 (UTC Timestamp 기반 연산)
+                    try:
+                        timestamp = match['fixture']['timestamp']
+                        utc_time = datetime.utcfromtimestamp(timestamp)
+                        kst_time = utc_time + timedelta(hours=9)
+                        match_time = kst_time.strftime("%H:%M")
                         is_past_start_time = datetime.utcnow() >= utc_time 
                     except: 
                         match_time = "시간미정"
@@ -412,6 +414,7 @@ if selected_sport == "축구":
                     elif a_power > h_power + 15: win_pick, pick_color = f"🔵 {away_kr} 전력 우세", "#4FC3F7"; pred_winner = "away"
                     else: win_pick, pick_color = "🟡 팽팽한 무승부", "#ff9800"; pred_winner = "draw"
 
+                    # 💡 승패 적중 피드백
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
                         if actual == pred_winner:
@@ -424,11 +427,43 @@ if selected_sport == "축구":
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                     stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
                     
+                    # 💡 핵심: 언더오버 결과 판독 및 분리 색상 (시안/보라) 적용
                     under_over_val = pred.get('predictions', {}).get('under_over', '')
-                    over_under = f"🔥 예상 기준점: {under_over_val.replace('-','').replace('+','')} {'언더' if '-' in under_over_val else '오버'}" if under_over_val else ("🔥 2.5 오버 예상" if h_vals[4]+a_vals[4]>=120 else "❄️ 2.5 언더 예상")
+                    ou_line = 2.5
+                    pred_is_over = True
+                    
+                    if under_over_val:
+                        if '-' in under_over_val:
+                            pred_is_over = False
+                            try: ou_line = float(under_over_val.replace('-', '').strip())
+                            except: pass
+                        elif '+' in under_over_val:
+                            pred_is_over = True
+                            try: ou_line = float(under_over_val.replace('+', '').strip())
+                            except: pass
+                    else:
+                        goal_expect = h_vals[4] + a_vals[4]
+                        if goal_expect >= 120: pred_is_over = True; ou_line = 2.5
+                        else: pred_is_over = False; ou_line = 2.5
+
+                    ou_color = "#ddd"
+                    ou_text_prefix = f"🔥 예상 기준점: {ou_line} {'오버' if pred_is_over else '언더'}"
+
+                    if is_finished:
+                        total_goals = h_g + a_g
+                        actual_is_over = total_goals > ou_line
+                        if actual_is_over == pred_is_over:
+                            over_under = f"{ou_text_prefix} (적중)"
+                            ou_color = "#00E5FF" # Cyan (적중)
+                        else:
+                            over_under = f"{ou_text_prefix} (미적중)"
+                            ou_color = "#E040FB" # Purple (미적중)
+                    else:
+                        over_under = ou_text_prefix
+
                     advice = translate_to_ko(pred.get('predictions', {}).get('advice', '데이터 분석 완료'))
 
-                    new_data_list.append({"sport": "축구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": referee, "venue": venue, "p_h": p_h, "p_d": p_d, "p_a": p_a, "win_pick": win_pick, "pick_color": pick_color, "control_pick": advice, "over_under": over_under, "radar_html": radar_html, "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html})
+                    new_data_list.append({"sport": "축구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": referee, "venue": venue, "p_h": p_h, "p_d": p_d, "p_a": p_a, "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "control_pick": advice, "over_under": over_under, "radar_html": radar_html, "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html})
             except: pass
         
         progress_bar.progress(1.0); status_text.text("✅ 축구 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
@@ -476,6 +511,7 @@ elif selected_sport == "야구":
                 status_code = game['status']['abstractGameState']
                 h_score = game['teams']['home'].get('score', 0); a_score = game['teams']['away'].get('score', 0)
                 
+                # 💡 타임존 정확하게 계산
                 try: 
                     utc_time = datetime.strptime(game.get('gameDate'), "%Y-%m-%dT%H:%M:%SZ")
                     match_time = (utc_time + timedelta(hours=9)).strftime("%H:%M")
@@ -530,7 +566,7 @@ elif selected_sport == "야구":
                 elif a_win_prob > h_win_prob + 10: win_pick = f"🔵 {away_kr} 승리 유력"; pick_color = "#4FC3F7"
                 else: win_pick = "🟡 팽팽한 투수/타격전 (접전)"; pick_color = "#ff9800"
                 
-                if status_code == 'Final':
+                if status_type == 'finished':
                     actual = "home" if h_score > a_score else "away"
                     if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob):
                         win_pick += " (적중)"
@@ -541,17 +577,42 @@ elif selected_sport == "야구":
 
                 stat_box = f"<span style='color:#aaa;'>AI 산출 배당:</span> 홈 <b style='color:#ff9800;'>{odds_h:.2f}</b> | 원정 <b style='color:#ff9800;'>{odds_a:.2f}</b><br><span style='color:#aaa;'>기대 득점:</span> {home_kr} <b>{h_exp_runs:.1f}점</b> vs <b>{a_exp_runs:.1f}점</b> {away_kr}"
                 
+                # 💡 핵심: 언더오버 결과 판독 및 색상 적용
                 total_exp_runs = h_exp_runs + a_exp_runs
-                if total_exp_runs > 9.0: over_under = f"🔥 예상 총 {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>오버 유력</b>)"
-                elif total_exp_runs < 8.0: over_under = f"❄️ 예상 총 {total_exp_runs:.1f}점 (기준점 8.5 대비 <b>언더 유력</b>)"
-                else: over_under = f"⚠️ 예상 총 {total_exp_runs:.1f}점 (기준점 8.5 근접)"
+                ou_line = 8.5
+                ou_color = "#ddd"
                 
+                if total_exp_runs > 9.0:
+                    pred_is_over = True
+                    ou_text = f"🔥 예상 총 {total_exp_runs:.1f}점 (기준점 8.5 오버)"
+                elif total_exp_runs < 8.0:
+                    pred_is_over = False
+                    ou_text = f"❄️ 예상 총 {total_exp_runs:.1f}점 (기준점 8.5 언더)"
+                else:
+                    pred_is_over = None
+                    ou_text = f"⚠️ 예상 총 {total_exp_runs:.1f}점 (기준점 8.5 패스)"
+
+                if status_type == 'finished':
+                    actual_total = h_score + a_score
+                    if pred_is_over is not None:
+                        actual_is_over = actual_total > ou_line
+                        if actual_is_over == pred_is_over:
+                            over_under = f"{ou_text} (적중)"
+                            ou_color = "#00E5FF" # Cyan (적중)
+                        else:
+                            over_under = f"{ou_text} (미적중)"
+                            ou_color = "#E040FB" # Purple (미적중)
+                    else:
+                        over_under = ou_text
+                else:
+                    over_under = ou_text
+
                 advice = "선발의 FIP와 타선의 최근 OPS를 5,000회 몬테카를로 시뮬레이션 한 결과입니다."
 
                 detail_html = get_baseball_detailed_html(home_kr, away_kr, home_pitcher, away_pitcher, h_s_fip, a_s_fip, h_bp_fip, a_bp_fip, h_ops, a_ops, h_s_ip, a_s_ip)
                 lineup_html = get_baseball_lineup_html(home_kr, away_kr, h_lineup, a_lineup)
 
-                new_data_list.append({"sport": "야구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": "TBD", "venue": venue, "p_h": f"{h_win_prob:.1f}", "p_d": "0", "p_a": f"{a_win_prob:.1f}", "win_pick": win_pick, "pick_color": pick_color, "control_pick": advice, "over_under": over_under, "lineup_html": lineup_html, "detail_html": detail_html})
+                new_data_list.append({"sport": "야구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": "TBD", "venue": venue, "p_h": f"{h_win_prob:.1f}", "p_d": "0", "p_a": f"{a_win_prob:.1f}", "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "control_pick": advice, "over_under": over_under, "lineup_html": lineup_html, "detail_html": detail_html})
             progress_bar.progress(1.0); status_text.text("✅ MLB 궁극의 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
             st.session_state['analyzed_data_list'] = new_data_list
         except Exception as e: st.error(f"오류: {e}")
@@ -588,7 +649,7 @@ if st.session_state.get('analyzed_data_list'):
                     </div>
                     <div class='predict-section'>
                         <div class='predict-txt' style='color: {data['pick_color']};'>🎯 {data['win_pick']}</div>
-                        <div class='over-under'>{data['over_under']}</div>
+                        <div class='over-under' style='color: {data['ou_color']};'>{data['over_under']}</div>
                         <div class='ai-advice'>⚔️ 요약: {data['control_pick']}</div>
                     </div>
                 </div>
