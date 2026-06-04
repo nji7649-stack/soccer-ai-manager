@@ -9,29 +9,24 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: Flexbox 탄성 레이아웃으로 겹침 완벽 방지 및 행 높이 일치
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 .stApp { background-color: #0e1117; }
 
-/* 💡 핵심: 카드의 전체 높이는 고정하되, 내부 요소들이 알아서 공간을 나눠 쓰도록 설정 */
 .card-box {
     background-color: #1e1e1e; padding: 20px; border-radius: 12px; 
     border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px;
     display: flex; flex-direction: column; 
-    height: 530px; /* 모든 카드 행 높이 완벽 고정 */
+    height: 530px;
 }
-/* Streamlit 기본 여백 충돌 방지 */
 .card-box p { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; }
 
-/* 💡 핵심: 상, 중, 하 구역을 나누어 절대 겹치지 않게 분리 */
 .card-top { flex-shrink: 0; }
 .card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin: 15px 0; }
 .card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }
 
-/* 텍스트 및 박스 디자인 */
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 5px; }
@@ -82,9 +77,6 @@ st.markdown(custom_css, unsafe_allow_html=True)
 FOOTBALL_API_KEY = st.secrets["FOOTBALL_API_KEY"] if "FOOTBALL_API_KEY" in st.secrets else ""
 HEADERS = {'x-apisports-key': FOOTBALL_API_KEY}
 
-# ==========================================
-# ⚙️ 공통 함수
-# ==========================================
 CUSTOM_DICT = {
     "Arsenal": "아스날", "Aston Villa": "애스턴 빌라", "Newcastle": "뉴캐슬", "Crystal Palace": "크리스탈 팰리스",
     "Athletics": "애슬레틱스", "Oakland Athletics": "오클랜드", "Oakland": "오클랜드",
@@ -113,9 +105,6 @@ def safe_num(value):
     try: return float(str(value).replace('%', '').replace('+', '').replace('-', ''))
     except: return 0.0
 
-# ==========================================
-# ⚽ 축구 전용 함수
-# ==========================================
 def fetch_custom_team_stats(team_id, season_year):
     try:
         url = "https://v3.football.api-sports.io/fixtures"
@@ -175,14 +164,9 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     for ratio in [0.33, 0.66, 1.0]:
         pts = [f"{center + (size*0.35)*ratio*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (size*0.35)*ratio*math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)]
         svg += f"<polygon points='{' '.join(pts)}' style='fill:none; stroke:#333; stroke-width:1;' />"
-    h_poly = get_poly(h_vals, "#4FC3F7", "rgba(79, 195, 247, 0.3)") 
-    a_poly = get_poly(a_vals, "#EF5350", "rgba(239, 83, 80, 0.3)") 
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 데이터 연산</div>" if is_custom else ""
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{get_poly(h_vals, '#4FC3F7', 'rgba(79, 195, 247, 0.3)')}{get_poly(a_vals, '#EF5350', 'rgba(239, 83, 80, 0.3)')}</svg></div>"
 
-# ==========================================
-# ⚾ 야구(MLB) 전용 함수
-# ==========================================
 MLB_PARK_FACTORS = {
     'Colorado Rockies': 1.12, 'Cincinnati Reds': 1.08, 'Boston Red Sox': 1.07, 'Texas Rangers': 1.05,
     'Chicago White Sox': 1.04, 'Atlanta Braves': 1.03, 'Los Angeles Dodgers': 1.03, 'Philadelphia Phillies': 1.02,
@@ -269,13 +253,12 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V29.0)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V29.2)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
 st.sidebar.markdown("---")
 
-# 💡 핵심: 한국시간(KST)으로 캘린더 기본값 오늘(today) 설정 완벽 동기화
 kst_now = datetime.utcnow() + timedelta(hours=9)
 st.sidebar.markdown("### 📅 검색 날짜 설정 (KST 기준)")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", kst_now.date(), label_visibility="collapsed")
@@ -410,11 +393,15 @@ if selected_sport == "축구":
 
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
-                        if actual == pred_winner: win_pick += " (적중)"; pick_color = "#ffcc00"
-                        else: win_pick += " (미적중)"; pick_color = "#ff5252"
+                        if actual == pred_winner:
+                            win_pick += " (적중)"
+                            pick_color = "#ffcc00"
+                        else:
+                            win_pick += " (미적중)"
+                            pick_color = "#ff5252"
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
-                    stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
+                    stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
                     
                     under_over_val = pred.get('predictions', {}).get('under_over', '')
                     ou_line = 2.5
@@ -429,15 +416,17 @@ if selected_sport == "축구":
                     ou_color = "#ddd"
                     ou_text_prefix = f"🔥 기준점 {ou_line} {'오버' if pred_is_over else '언더'}"
 
+                    # 💡 파스텔 옐로우(#FFF59D) & 파스텔 핑크(#F48FB1) 복원
                     if is_finished:
                         actual_is_over = (h_g + a_g) > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text_prefix} (적중)"
-                            ou_color = "#81D4FA" 
+                            ou_color = "#FFF59D" 
                         else:
                             over_under = f"{ou_text_prefix} (미적중)"
                             ou_color = "#F48FB1" 
-                    else: over_under = ou_text_prefix
+                    else:
+                        over_under = ou_text_prefix
 
                     advice = translate_to_ko(pred.get('predictions', {}).get('advice', '분석 완료'))
 
@@ -572,10 +561,10 @@ elif selected_sport == "야구":
                         actual_is_over = actual_total > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text} (적중)"
-                            ou_color = "#81D4FA" 
+                            ou_color = "#FFF59D" # 파스텔 옐로우
                         else:
                             over_under = f"{ou_text} (미적중)"
-                            ou_color = "#F48FB1" 
+                            ou_color = "#F48FB1" # 파스텔 핑크
                     else: over_under = ou_text
                 else: over_under = ou_text
                 
