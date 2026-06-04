@@ -9,7 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS
+# 🎨 UI CSS: 점수판 찌그러짐 방지(nowrap) 및 레이아웃 최적화
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
@@ -24,12 +24,13 @@ custom_css = """
 }
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 
+/* 💡 핵심: 점수판 구역(score-side) 줄바꿈 절대 금지 및 크기 보정 */
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 8px; min-height: 48px; }
 .team-side { display: flex; align-items: center; flex: 1; gap: 8px; width: 40%; }
 .home-side { justify-content: flex-end; text-align: right; }
 .away-side { justify-content: flex-start; text-align: left; }
-.team-name { font-size: 15px; font-weight: bold; line-height: 1.2; word-break: keep-all; overflow-wrap: break-word; color: #ffffff; max-width: 90px; }
-.score-side { font-size: 24px; font-weight: bold; padding: 0 10px; width: 80px; text-align: center; flex-shrink: 0; letter-spacing: 1px; }
+.team-name { font-size: 14.5px; font-weight: bold; line-height: 1.2; word-break: keep-all; overflow-wrap: break-word; color: #ffffff; max-width: 80px; }
+.score-side { font-size: 24px; font-weight: bold; padding: 0 5px; min-width: 90px; text-align: center; flex-shrink: 0; letter-spacing: 1px; white-space: nowrap; } /* nowrap 추가로 2자리 점수도 위아래로 안 꺾임 */
 .team-logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; }
 
 .referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 15px; }
@@ -37,7 +38,7 @@ custom_css = """
 
 .predict-section { margin-top: auto; border-top: 1px dashed #555; padding-top: 15px; text-align: center; margin-bottom: 15px; }
 .predict-txt { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
-.over-under { font-size: 13px; font-weight: bold; margin-bottom: 8px; } /* 💡 언오버 텍스트 CSS */
+.over-under { font-size: 13px; font-weight: bold; margin-bottom: 8px; } 
 .ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; height: 32px; }
 
 .prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 2px; margin-bottom: 10px; background-color: #333; }
@@ -52,6 +53,7 @@ custom_css = """
 .detail-table td { padding: 8px 5px; border-bottom: 1px solid #2a2a2a; word-wrap: break-word; } 
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
+/* 사이드바 원형 다크 아이콘 탭 */
 [data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }
 [data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }
@@ -258,7 +260,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.6)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.7)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -279,23 +281,17 @@ if selected_sport == "축구":
     st.sidebar.markdown("### ⚽ 축구 리그 선택")
     
     with st.sidebar.expander("🌟 국제 대회 (UEFA/FIFA)", expanded=True):
-        l_2 = st.checkbox("챔피언스리그 (UCL)", value=False)
-        l_3 = st.checkbox("유로파리그 (UEL)", value=False)
-        l_1 = st.checkbox("월드컵 (World Cup)", value=False)
-        l_10 = st.checkbox("A매치 친선전", value=True)
+        l_2 = st.checkbox("챔피언스리그 (UCL)", value=False); l_3 = st.checkbox("유로파리그 (UEL)", value=False)
+        l_1 = st.checkbox("월드컵 (World Cup)", value=False); l_10 = st.checkbox("A매치 친선전", value=True)
 
     with st.sidebar.expander("🌍 유럽 주요 1부 리그", expanded=True):
-        l_39 = st.checkbox("프리미어리그 (ENG)", value=True)
-        l_140 = st.checkbox("라리가 (ESP)", value=True)
-        l_135 = st.checkbox("세리에 A (ITA)", value=False)
-        l_78 = st.checkbox("분데스리가 (GER)", value=False)
-        l_61 = st.checkbox("리그 1 (FRA)", value=False)
-        l_88 = st.checkbox("에레디비시 (NED)", value=False)
+        l_39 = st.checkbox("프리미어리그 (ENG)", value=True); l_140 = st.checkbox("라리가 (ESP)", value=True)
+        l_135 = st.checkbox("세리에 A (ITA)", value=False); l_78 = st.checkbox("분데스리가 (GER)", value=False)
+        l_61 = st.checkbox("리그 1 (FRA)", value=False); l_88 = st.checkbox("에레디비시 (NED)", value=False)
         l_119 = st.checkbox("스코티시 프리미어십 (SCO)", value=False)
 
     with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
-        l_292 = st.checkbox("K리그1 (KOR 1부)", value=False)
-        l_293 = st.checkbox("K리그2 (KOR 2부)", value=False)
+        l_292 = st.checkbox("K리그1 (KOR 1부)", value=False); l_293 = st.checkbox("K리그2 (KOR 2부)", value=False)
         l_98 = st.checkbox("J1리그 (JPN)", value=False)
 
     selected_leagues = [lid for lid, selected in zip(["2","3","1","10","39","140","135","78","61","88","119","292","293","98"], 
@@ -315,7 +311,7 @@ if selected_sport == "축구":
             progress_bar.progress((idx) / total_leagues)
             
             calc_season_year = str(selected_date.year - 1) if league_id in AUTUMN_TO_SPRING_LEAGUES and selected_date.month < 7 else str(selected_date.year)
-            querystring = {"league": league_id, "season": calc_season_year, "date": selected_date.strftime('%Y-%m-%d')}
+            querystring = {"league": league_id, "season": calc_season_year, "date": selected_date.strftime('%Y-%m-%d'), "timezone": "Asia/Seoul"}
             
             try:
                 res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params=querystring, timeout=10).json()
@@ -331,7 +327,6 @@ if selected_sport == "축구":
                     venue = match['fixture']['venue']['name'] or "미정"
                     status_short = match['fixture']['status']['short']
                     
-                    # 💡 핵심: 축구 타임존 +9시간 이중 변환 버그 완벽 수정 (UTC Timestamp 기반 연산)
                     try:
                         timestamp = match['fixture']['timestamp']
                         utc_time = datetime.utcfromtimestamp(timestamp)
@@ -414,7 +409,6 @@ if selected_sport == "축구":
                     elif a_power > h_power + 15: win_pick, pick_color = f"🔵 {away_kr} 전력 우세", "#4FC3F7"; pred_winner = "away"
                     else: win_pick, pick_color = "🟡 팽팽한 무승부", "#ff9800"; pred_winner = "draw"
 
-                    # 💡 승패 적중 피드백
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
                         if actual == pred_winner:
@@ -427,7 +421,7 @@ if selected_sport == "축구":
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                     stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
                     
-                    # 💡 핵심: 언더오버 결과 판독 및 분리 색상 (시안/보라) 적용
+                    # 💡 축구 언오버 파스텔톤 적용
                     under_over_val = pred.get('predictions', {}).get('under_over', '')
                     ou_line = 2.5
                     pred_is_over = True
@@ -454,10 +448,10 @@ if selected_sport == "축구":
                         actual_is_over = total_goals > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text_prefix} (적중)"
-                            ou_color = "#00E5FF" # Cyan (적중)
+                            ou_color = "#81D4FA" # 💡 파스텔 스카이블루
                         else:
                             over_under = f"{ou_text_prefix} (미적중)"
-                            ou_color = "#E040FB" # Purple (미적중)
+                            ou_color = "#F48FB1" # 💡 파스텔 핑크
                     else:
                         over_under = ou_text_prefix
 
@@ -487,17 +481,37 @@ elif selected_sport == "야구":
         momentum_dict = load_mlb_team_momentum()
         progress_bar.progress(0.5)
         
-        us_date = selected_date - timedelta(days=1)
-        schedule_url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={us_date.strftime('%Y-%m-%d')}&hydrate=probablePitcher"
+        # 💡 핵심: 날짜 동기화 버그 완벽 수정 (앞뒤 날짜를 넓게 불러와서 KST로 정확히 필터링)
+        start_date_str = (selected_date - timedelta(days=1)).strftime('%Y-%m-%d')
+        end_date_str = (selected_date + timedelta(days=1)).strftime('%Y-%m-%d')
+        schedule_url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate={start_date_str}&endDate={end_date_str}&hydrate=probablePitcher"
         
         try:
             res = requests.get(schedule_url, timeout=5).json()
-            games_data = res.get('dates', [{}])[0].get('games', []) if res.get('dates') else []
+            
+            # API에서 받아온 모든 날짜의 게임을 하나의 리스트로 합침
+            all_games = []
+            for date_data in res.get('dates', []):
+                all_games.extend(date_data.get('games', []))
+                
             new_data_list = []
             
-            for idx, game in enumerate(games_data):
-                status_text.text(f"🔍 MLB 매치업 엔진 가동 중... ({idx+1}/{len(games_data)})")
-                progress_bar.progress(0.5 + (0.5 * (idx / len(games_data))))
+            for idx, game in enumerate(all_games):
+                status_text.text(f"🔍 MLB 매치업 엔진 가동 중... ({idx+1}/{len(all_games)})")
+                progress_bar.progress(0.5 + (0.5 * (idx / len(all_games))))
+                
+                # 💡 핵심: UTC 시간을 KST로 변환하여 유저가 선택한 날짜와 정확히 일치하는 경기만 진행
+                try: 
+                    utc_time = datetime.strptime(game.get('gameDate'), "%Y-%m-%dT%H:%M:%SZ")
+                    kst_time = utc_time + timedelta(hours=9)
+                    if kst_time.date() != selected_date:
+                        continue # 유저가 선택한 KST 날짜가 아니면 가차없이 스킵
+                        
+                    match_time = kst_time.strftime("%H:%M")
+                    is_past_start_time = datetime.utcnow() >= utc_time
+                except: 
+                    match_time = "시간미정"
+                    is_past_start_time = True
                 
                 game_pk = game.get('gamePk')
                 away_team = game['teams']['away']['team']['name']; home_team = game['teams']['home']['team']['name']
@@ -510,15 +524,6 @@ elif selected_sport == "야구":
                 
                 status_code = game['status']['abstractGameState']
                 h_score = game['teams']['home'].get('score', 0); a_score = game['teams']['away'].get('score', 0)
-                
-                # 💡 타임존 정확하게 계산
-                try: 
-                    utc_time = datetime.strptime(game.get('gameDate'), "%Y-%m-%dT%H:%M:%SZ")
-                    match_time = (utc_time + timedelta(hours=9)).strftime("%H:%M")
-                    is_past_start_time = datetime.utcnow() >= utc_time
-                except: 
-                    match_time = "시간미정"
-                    is_past_start_time = True
                 
                 if status_code == 'Final': 
                     top_league_display = f"MLB ({match_time}) <br><span style='color:#aaa; font-size:12px;'>[경기 종료]</span>"
@@ -577,7 +582,7 @@ elif selected_sport == "야구":
 
                 stat_box = f"<span style='color:#aaa;'>AI 산출 배당:</span> 홈 <b style='color:#ff9800;'>{odds_h:.2f}</b> | 원정 <b style='color:#ff9800;'>{odds_a:.2f}</b><br><span style='color:#aaa;'>기대 득점:</span> {home_kr} <b>{h_exp_runs:.1f}점</b> vs <b>{a_exp_runs:.1f}점</b> {away_kr}"
                 
-                # 💡 핵심: 언더오버 결과 판독 및 색상 적용
+                # 💡 핵심: 야구 언더오버 파스텔톤 적용
                 total_exp_runs = h_exp_runs + a_exp_runs
                 ou_line = 8.5
                 ou_color = "#ddd"
@@ -598,22 +603,27 @@ elif selected_sport == "야구":
                         actual_is_over = actual_total > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text} (적중)"
-                            ou_color = "#00E5FF" # Cyan (적중)
+                            ou_color = "#81D4FA" # 💡 파스텔 스카이블루
                         else:
                             over_under = f"{ou_text} (미적중)"
-                            ou_color = "#E040FB" # Purple (미적중)
+                            ou_color = "#F48FB1" # 💡 파스텔 핑크
                     else:
                         over_under = ou_text
                 else:
                     over_under = ou_text
-
+                
                 advice = "선발의 FIP와 타선의 최근 OPS를 5,000회 몬테카를로 시뮬레이션 한 결과입니다."
 
                 detail_html = get_baseball_detailed_html(home_kr, away_kr, home_pitcher, away_pitcher, h_s_fip, a_s_fip, h_bp_fip, a_bp_fip, h_ops, a_ops, h_s_ip, a_s_ip)
                 lineup_html = get_baseball_lineup_html(home_kr, away_kr, h_lineup, a_lineup)
 
                 new_data_list.append({"sport": "야구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": "TBD", "venue": venue, "p_h": f"{h_win_prob:.1f}", "p_d": "0", "p_a": f"{a_win_prob:.1f}", "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "control_pick": advice, "over_under": over_under, "lineup_html": lineup_html, "detail_html": detail_html})
-            progress_bar.progress(1.0); status_text.text("✅ MLB 궁극의 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
+            
+            # 검색 결과가 없으면 (모두 필터링으로 스킵된 경우)
+            if not new_data_list:
+                st.info(f"해당 날짜({selected_date})에 한국시간 기준으로 시작하는 경기가 없습니다.")
+            
+            progress_bar.progress(1.0); status_text.text("✅ 궁극의 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
             st.session_state['analyzed_data_list'] = new_data_list
         except Exception as e: st.error(f"오류: {e}")
 
