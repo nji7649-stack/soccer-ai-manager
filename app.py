@@ -9,59 +9,60 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 팀명 한줄 고정(nowrap), 행 높이(height) 절대 고정, 언오버 컬러 수정
+# 🎨 UI CSS: 구역(섹션) 분할을 통한 글자 겹침 방지 및 깔끔한 그리드 정렬
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 .stApp { background-color: #0e1117; }
 
+/* 💡 카드 전체 틀: 내부 여백을 넉넉히 주고 반응형으로 늘어나게 설정 */
 .card-box {
-    background-color: #1e1e1e; padding: 15px 20px; border-radius: 12px; 
+    background-color: #1e1e1e; padding: 20px; border-radius: 12px; 
     border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px;
-    display: flex; flex-direction: column; justify-content: space-between;
-    height: 520px; overflow: hidden;
+    display: flex; flex-direction: column; 
+    height: 100%; min-height: 520px; 
 }
+.card-box p { margin: 0 !important; padding: 0 !important; } /* Streamlit 기본 여백 제거 */
 
-/* 💡 리그 텍스트 높이 고정 */
-.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; text-align: center; letter-spacing: 1px; height: 20px; }
+/* 💡 상/중/하 구역 분할로 글자 겹침 완벽 차단 */
+.top-section { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 110px; margin-bottom: 10px; }
+.mid-section { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+.bot-section { border-top: 1px dashed #555; padding-top: 15px; margin-top: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100px; }
 
-/* 💡 매치 박스: 팀명 한 줄 고정 및 남는 공간 활용 최적화 */
-.match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 8px; height: 35px; }
-.team-side { display: flex; align-items: center; flex: 1; gap: 8px; width: 42%; }
+/* 상단 텍스트 요소 */
+.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
+.match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 8px; }
+.team-side { display: flex; align-items: center; flex: 1; gap: 8px; width: 40%; }
 .home-side { justify-content: flex-end; text-align: right; }
 .away-side { justify-content: flex-start; text-align: left; }
-/* 💡 팀명 무조건 1줄 유지, 넘치면 ... 처리, 폰트 크기 자동 조절 대비 */
-.team-name { font-size: 14.5px; font-weight: bold; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
-.score-side { font-size: 24px; font-weight: bold; padding: 0 5px; width: 16%; text-align: center; flex-shrink: 0; white-space: nowrap; }
-.team-logo { width: 24px; height: 24px; object-fit: contain; flex-shrink: 0; }
+.team-name { font-size: 14.5px; font-weight: bold; line-height: 1.2; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95px; }
+.score-side { font-size: 24px; font-weight: bold; padding: 0 5px; min-width: 80px; text-align: center; flex-shrink: 0; letter-spacing: 1px; white-space: nowrap; }
+.team-logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; }
+.referee-txt { font-size: 11px; color: #888; text-align: center; }
 
-/* 💡 심판/경기장 텍스트 높이 고정 */
-.referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 10px; height: 16px; }
-
-/* 💡 확률 바 영역 높이 고정 */
-.prob-wrapper { height: 30px; margin-bottom: 10px; }
-.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 2px; }
-.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; background-color: #333; }
+/* 중단 텍스트 요소 (스탯 & 확률 바) */
+.prob-wrapper { width: 100%; margin-bottom: 15px; }
+.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 2px; background-color: #333; }
 .prob-home { background-color: #4FC3F7; height: 100%; }
 .prob-draw { background-color: #ff9800; height: 100%; }
 .prob-away { background-color: #EF5350; height: 100%; }
+.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; }
+.stat-bg { background-color: #262730; padding: 15px; border-radius: 8px; color: #eeeeee; font-size: 13px; line-height: 1.6; text-align: center; border: 1px solid #444; width: 100%; }
 
-/* 💡 스탯 박스 높이 강제 고정 */
-.stat-bg { background-color: #262730; padding: 12px; border-radius: 8px; color: #eeeeee; font-size: 12.5px; line-height: 1.6; text-align: center; border: 1px solid #444; height: 60px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 10px; }
+/* 하단 텍스트 요소 (결과 예측) */
+.predict-txt { font-size: 15px; font-weight: bold; margin-bottom: 6px; }
+.over-under { font-size: 13.5px; font-weight: bold; margin-bottom: 8px; } 
+.ai-advice { font-size: 11.5px; color: #aaa; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; text-align: center; }
 
-/* 💡 하단 예측 결과 텍스트 모음 높이 고정 */
-.predict-section { border-top: 1px dashed #555; padding-top: 12px; text-align: center; height: 110px; display: flex; flex-direction: column; justify-content: center; }
-.predict-txt { font-size: 15px; font-weight: bold; margin-bottom: 5px; height: 22px; white-space: nowrap; }
-.over-under { font-size: 13px; font-weight: bold; margin-bottom: 5px; height: 18px; white-space: nowrap; } 
-.ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; height: 32px; }
-
+/* 확장 패널(상세지표) 요소 */
 .table-wrapper { width: 100%; overflow-x: auto; margin-top: 5px; margin-bottom: 15px; }
 .detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; table-layout: fixed; } 
 .detail-table th { background-color: #111; padding: 10px 5px; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }
 .detail-table td { padding: 8px 5px; border-bottom: 1px solid #2a2a2a; word-wrap: break-word; } 
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
+/* 사이드바 원형 탭 */
 [data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }
 [data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }
@@ -174,8 +175,6 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     for ratio in [0.33, 0.66, 1.0]:
         pts = [f"{center + (size*0.35)*ratio*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (size*0.35)*ratio*math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)]
         svg += f"<polygon points='{' '.join(pts)}' style='fill:none; stroke:#333; stroke-width:1;' />"
-    h_poly = get_poly(h_vals, "#4FC3F7", "rgba(79, 195, 247, 0.3)") 
-    a_poly = get_poly(a_vals, "#EF5350", "rgba(239, 83, 80, 0.3)") 
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 데이터 연산</div>" if is_custom else ""
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{get_poly(h_vals, '#4FC3F7', 'rgba(79, 195, 247, 0.3)')}{get_poly(a_vals, '#EF5350', 'rgba(239, 83, 80, 0.3)')}</svg></div>"
 
@@ -268,7 +267,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.8)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V28.9)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -433,7 +432,7 @@ if selected_sport == "축구":
                             pick_color = "#ff5252"
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
-                    stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
+                    stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
                     
                     under_over_val = pred.get('predictions', {}).get('under_over', '')
                     ou_line = 2.5
@@ -461,10 +460,10 @@ if selected_sport == "축구":
                         actual_is_over = total_goals > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text_prefix} (적중)"
-                            ou_color = "#FFF59D" # 💡 파스텔 옐로우 (축구 적중)
+                            ou_color = "#FFF59D" # 파스텔 옐로우
                         else:
                             over_under = f"{ou_text_prefix} (미적중)"
-                            ou_color = "#F48FB1" # 💡 파스텔 핑크 (미적중)
+                            ou_color = "#F48FB1" # 파스텔 핑크
                     else:
                         over_under = ou_text_prefix
 
@@ -578,7 +577,7 @@ elif selected_sport == "야구":
                 elif a_win_prob > h_win_prob + 10: win_pick = f"🔵 {away_kr} 승리 유력"; pick_color = "#4FC3F7"
                 else: win_pick = "🟡 팽팽한 투수/타격전 (접전)"; pick_color = "#ff9800"
                 
-                if status_code == 'Final':
+                if status_type == 'finished':
                     actual = "home" if h_score > a_score else "away"
                     if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob):
                         win_pick += " (적중)"
@@ -595,13 +594,13 @@ elif selected_sport == "야구":
                 
                 if total_exp_runs > 9.0:
                     pred_is_over = True
-                    ou_text = f"🔥 총 {total_exp_runs:.1f}점 (기준점 8.5 오버 유력)"
+                    ou_text = f"🔥 총 {total_exp_runs:.1f}점 (기준 8.5 오버 유력)"
                 elif total_exp_runs < 8.0:
                     pred_is_over = False
-                    ou_text = f"❄️ 총 {total_exp_runs:.1f}점 (기준점 8.5 언더 유력)"
+                    ou_text = f"❄️ 총 {total_exp_runs:.1f}점 (기준 8.5 언더 유력)"
                 else:
                     pred_is_over = None
-                    ou_text = f"⚠️ 총 {total_exp_runs:.1f}점 (기준점 8.5 근접)"
+                    ou_text = f"⚠️ 총 {total_exp_runs:.1f}점 (기준 8.5 근접)"
 
                 if status_type == 'finished':
                     actual_total = h_score + a_score
@@ -609,10 +608,10 @@ elif selected_sport == "야구":
                         actual_is_over = actual_total > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text} (적중)"
-                            ou_color = "#FFF59D" # 💡 파스텔 옐로우 (야구 적중)
+                            ou_color = "#FFF59D" # 파스텔 옐로우
                         else:
                             over_under = f"{ou_text} (미적중)"
-                            ou_color = "#F48FB1" # 💡 파스텔 핑크
+                            ou_color = "#F48FB1" # 파스텔 핑크
                     else:
                         over_under = ou_text
                 else:
@@ -652,19 +651,24 @@ if st.session_state.get('analyzed_data_list'):
             else:
                 prob_bar = f"<div class='prob-wrapper'><div class='prob-text'><span>승 {data['p_h']}%</span><span>무 {data['p_d']}%</span><span>패 {data['p_a']}%</span></div><div class='prob-container'><div class='prob-home' style='width: {data['p_h']}%;'></div><div class='prob-draw' style='width: {data['p_d']}%;'></div><div class='prob-away' style='width: {data['p_a']}%;'></div></div></div>"
             
+            # 💡 핵심: 상/중/하 구역(Section)을 완전히 분리하여 모든 카드의 행 높이를 100% 동일하게 강제
             html_str = f"""
-            <div class='card-box'>
-                <div>
-                    <div class='league-txt'>{data['league']}</div>
-                    {data['match_display']}
-                    <div class='referee-txt'>🏟️ {data['venue']}</div>
-                    {prob_bar}
-                    <div class='stat-bg'>{data['stat_box']}</div>
-                </div>
-                <div class='predict-section'>
-                    <div class='predict-txt' style='color: {data['pick_color']};'>🎯 {data['win_pick']}</div>
-                    <div class='over-under' style='color: {data['ou_color']};'>{data['over_under']}</div>
-                    <div class='ai-advice'>⚔️ 요약: {data['control_pick']}</div>
+            <div style='height: 100%;'>
+                <div class='card-box'>
+                    <div class='top-section'>
+                        <div class='league-txt'>{data['league']}</div>
+                        {data['match_display']}
+                        <div class='referee-txt'>🏟️ {data['venue']}</div>
+                    </div>
+                    <div class='mid-section'>
+                        {prob_bar}
+                        <div class='stat-bg'>{data['stat_box']}</div>
+                    </div>
+                    <div class='bot-section'>
+                        <div class='predict-txt' style='color: {data['pick_color']};'>🎯 {data['win_pick']}</div>
+                        <div class='over-under' style='color: {data['ou_color']};'>{data['over_under']}</div>
+                        <div class='ai-advice'>⚔️ 요약: {data['control_pick']}</div>
+                    </div>
                 </div>
             </div>
             """
