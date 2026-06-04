@@ -9,22 +9,23 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS: 팀 로고 수직 중앙 정렬, 점수판 센터 고정, 텍스트 줄바꿈 방어
+# 🎨 UI CSS: 상세 분석 테이블 100% 꽉 채우기 및 정렬 붕괴 방지
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 .stApp { background-color: #0e1117; }
 
+/* 💡 카드 내부 기본 디자인 */
 .card-box {
     background-color: #1e1e1e; padding: 15px 20px; border-radius: 12px; 
     border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px;
     display: flex; flex-direction: column; justify-content: flex-start;
-    height: 520px; overflow: hidden; /* 높이 강제 고정 */
+    min-height: 520px; /* 강제 고정을 풀고, 최소 높이만 지정하여 아코디언이 펼쳐질 공간 확보 */
 }
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 
-/* 💡 핵심: 점수는 무조건 정중앙, 팀 이름이 길어지면 자기 구역 안에서만 줄바꿈 처리 */
+/* 매치 박스 및 중앙 정렬 */
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 8px; min-height: 48px; }
 .team-side { display: flex; align-items: center; flex: 1; gap: 8px; width: 40%; }
 .home-side { justify-content: flex-end; text-align: right; }
@@ -36,7 +37,7 @@ custom_css = """
 .referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 15px; }
 .stat-bg { background-color: #262730; padding: 12px; border-radius: 8px; color: #eeeeee; font-size: 13px; line-height: 1.6; text-align: center; margin-bottom: 15px; border: 1px solid #444; }
 
-.predict-section { margin-top: auto; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }
+.predict-section { margin-top: auto; border-top: 1px dashed #555; padding-top: 15px; text-align: center; margin-bottom: 15px; }
 .predict-txt { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
 .over-under { font-size: 13px; color: #ddd; font-weight: normal; margin-bottom: 8px; }
 .ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; height: 32px; }
@@ -47,11 +48,12 @@ custom_css = """
 .prob-away { background-color: #EF5350; height: 100%; }
 .prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 2px; }
 
-.table-wrapper { overflow-x: auto; margin-top: 10px; }
-.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; }
-.detail-table th { background-color: #111; padding: 8px; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }
-.detail-table td { padding: 6px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
-.injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 2px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
+/* 💡 핵심: 상세 지표 아코디언 및 테이블 강제 정렬 */
+.table-wrapper { width: 100%; overflow-x: auto; margin-top: 5px; margin-bottom: 15px; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; table-layout: fixed; } /* table-layout 고정으로 찌그러짐 방지 */
+.detail-table th { background-color: #111; padding: 10px 5px; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }
+.detail-table td { padding: 8px 5px; border-bottom: 1px solid #2a2a2a; word-wrap: break-word; } /* 셀 내부 자동 줄바꿈 허용 */
+.injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 
 /* 사이드바 원형 다크 아이콘 탭 */
 [data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
@@ -74,9 +76,8 @@ FOOTBALL_API_KEY = st.secrets["FOOTBALL_API_KEY"] if "FOOTBALL_API_KEY" in st.se
 HEADERS = {'x-apisports-key': FOOTBALL_API_KEY}
 
 # ==========================================
-# ⚙️ 공통 함수 (번역 사전 추가)
+# ⚙️ 공통 함수 (번역 사전)
 # ==========================================
-# 💡 핵심: MLB 팀 이름 깔끔한 한글화 및 축구 오번역 방지 사전
 CUSTOM_DICT = {
     "Arsenal": "아스날", "Aston Villa": "애스턴 빌라", "Newcastle": "뉴캐슬", "Crystal Palace": "크리스탈 팰리스",
     "Arizona Diamondbacks": "애리조나", "Atlanta Braves": "애틀랜타", "Baltimore Orioles": "볼티모어",
@@ -166,8 +167,10 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     for ratio in [0.33, 0.66, 1.0]:
         pts = [f"{center + (size*0.35)*ratio*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (size*0.35)*ratio*math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)]
         svg += f"<polygon points='{' '.join(pts)}' style='fill:none; stroke:#333; stroke-width:1;' />"
+    h_poly = get_poly(h_vals, "#4FC3F7", "rgba(79, 195, 247, 0.3)") 
+    a_poly = get_poly(a_vals, "#EF5350", "rgba(239, 83, 80, 0.3)") 
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 데이터 연산</div>" if is_custom else ""
-    return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{get_poly(h_vals, '#4FC3F7', 'rgba(79, 195, 247, 0.3)')}{get_poly(a_vals, '#EF5350', 'rgba(239, 83, 80, 0.3)')}</svg></div>"
+    return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{get_poly(h_vals, '#4FC3F7', 'rgba(79, 195, 247, 0.3)')}{get_poly(a_vals, '#EF5350', 'rgba(239, 83, 80, 0.3)')}</svg></div>"
 
 # ==========================================
 # ⚾ 야구(MLB) 전용 함수
@@ -279,23 +282,17 @@ if selected_sport == "축구":
     st.sidebar.markdown("### ⚽ 축구 리그 선택")
     
     with st.sidebar.expander("🌟 국제 대회 (UEFA/FIFA)", expanded=True):
-        l_2 = st.checkbox("챔피언스리그 (UCL)", value=False)
-        l_3 = st.checkbox("유로파리그 (UEL)", value=False)
-        l_1 = st.checkbox("월드컵 (World Cup)", value=False)
-        l_10 = st.checkbox("A매치 친선전", value=True)
+        l_2 = st.checkbox("챔피언스리그 (UCL)", value=False); l_3 = st.checkbox("유로파리그 (UEL)", value=False)
+        l_1 = st.checkbox("월드컵 (World Cup)", value=False); l_10 = st.checkbox("A매치 친선전", value=True)
 
     with st.sidebar.expander("🌍 유럽 주요 1부 리그", expanded=True):
-        l_39 = st.checkbox("프리미어리그 (ENG)", value=True)
-        l_140 = st.checkbox("라리가 (ESP)", value=True)
-        l_135 = st.checkbox("세리에 A (ITA)", value=False)
-        l_78 = st.checkbox("분데스리가 (GER)", value=False)
-        l_61 = st.checkbox("리그 1 (FRA)", value=False)
-        l_88 = st.checkbox("에레디비시 (NED)", value=False)
+        l_39 = st.checkbox("프리미어리그 (ENG)", value=True); l_140 = st.checkbox("라리가 (ESP)", value=True)
+        l_135 = st.checkbox("세리에 A (ITA)", value=False); l_78 = st.checkbox("분데스리가 (GER)", value=False)
+        l_61 = st.checkbox("리그 1 (FRA)", value=False); l_88 = st.checkbox("에레디비시 (NED)", value=False)
         l_119 = st.checkbox("스코티시 프리미어십 (SCO)", value=False)
 
     with st.sidebar.expander("🌏 아시아 및 기타", expanded=True):
-        l_292 = st.checkbox("K리그1 (KOR 1부)", value=False)
-        l_293 = st.checkbox("K리그2 (KOR 2부)", value=False)
+        l_292 = st.checkbox("K리그1 (KOR 1부)", value=False); l_293 = st.checkbox("K리그2 (KOR 2부)", value=False)
         l_98 = st.checkbox("J1리그 (JPN)", value=False)
 
     selected_leagues = [lid for lid, selected in zip(["2","3","1","10","39","140","135","78","61","88","119","292","293","98"], 
@@ -322,9 +319,7 @@ if selected_sport == "축구":
                 for match in res.get('response', []):
                     fix_id = str(match['fixture']['id'])
                     home_id = match['teams']['home']['id']; away_id = match['teams']['away']['id']
-                    
-                    home_en = match['teams']['home']['name']; away_en = match['teams']['away']['name']
-                    home_kr = translate_to_ko(home_en); away_kr = translate_to_ko(away_en)
+                    home_kr = translate_to_ko(match['teams']['home']['name']); away_kr = translate_to_ko(match['teams']['away']['name'])
                     home_logo = match['teams']['home']['logo']; away_logo = match['teams']['away']['logo']
                     
                     referee = str(match['fixture']['referee']).split(',')[0] if match['fixture']['referee'] else "배정 전"
@@ -353,7 +348,6 @@ if selected_sport == "축구":
                     h_logo_html = f"<img src='{home_logo}' class='team-logo'>"
                     a_logo_html = f"<img src='{away_logo}' class='team-logo'>"
                     
-                    # 💡 핵심: 축구 UI 그리드 매치 박스 적용
                     if is_finished: score_color = "#00E676"; score_text = f"{h_g} : {a_g}"
                     elif is_live: score_color = "#ff5252"; score_text = f"{h_g} : {a_g}"
                     else: score_color = "#888888"; score_text = "VS"
@@ -414,12 +408,8 @@ if selected_sport == "축구":
 
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
-                        if actual == pred_winner:
-                            win_pick += " (적중)"
-                            pick_color = "#ffcc00"
-                        else:
-                            win_pick += " (미적중)"
-                            pick_color = "#ff5252"
+                        if actual == pred_winner: win_pick += " (적중)"; pick_color = "#ffcc00"
+                        else: win_pick += " (미적중)"; pick_color = "#ff5252"
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                     stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
@@ -470,7 +460,6 @@ elif selected_sport == "야구":
                 away_pitcher = game['teams']['away'].get('probablePitcher', {}).get('fullName', 'TBD'); home_pitcher = game['teams']['home'].get('probablePitcher', {}).get('fullName', 'TBD')
                 venue = game.get('venue', {}).get('name', '미정')
                 
-                # 💡 핵심: MLB 팀 이름 한글화 연동
                 home_kr = translate_to_ko(home_team)
                 away_kr = translate_to_ko(away_team)
                 
@@ -498,7 +487,6 @@ elif selected_sport == "야구":
                 h_logo_html = f"<img src='https://www.mlbstatic.com/team-logos/{home_id}.svg' class='team-logo'>"
                 a_logo_html = f"<img src='https://www.mlbstatic.com/team-logos/{away_id}.svg' class='team-logo'>"
 
-                # 💡 핵심: 야구 UI 그리드 매치 박스 적용
                 if status_type == "finished": score_color = "#00E676"; score_text = f"{h_score} : {a_score}"
                 elif status_type == "live": score_color = "#ff5252"; score_text = f"{h_score} : {a_score}"
                 else: score_color = "#888888"; score_text = "VS"
@@ -535,11 +523,9 @@ elif selected_sport == "야구":
                 if status_code == 'Final':
                     actual = "home" if h_score > a_score else "away"
                     if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob):
-                        win_pick += " (적중)"
-                        pick_color = "#ffcc00"
+                        win_pick += " (적중)"; pick_color = "#ffcc00"
                     else:
-                        win_pick += " (미적중)"
-                        pick_color = "#ff5252"
+                        win_pick += " (미적중)"; pick_color = "#ff5252"
 
                 stat_box = f"<span style='color:#aaa;'>AI 산출 배당:</span> 홈 <b style='color:#ff9800;'>{odds_h:.2f}</b> | 원정 <b style='color:#ff9800;'>{odds_a:.2f}</b><br><span style='color:#aaa;'>기대 득점:</span> {home_kr} <b>{h_exp_runs:.1f}점</b> vs <b>{a_exp_runs:.1f}점</b> {away_kr}"
                 
