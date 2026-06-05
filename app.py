@@ -801,4 +801,4 @@ if selected_sport == "야구" and st.session_state.get('kbo_npb_data_list'):
                 elif total_exp < data['ou_line'] - 0.5: ou_text = f"❄️ 총 {total_exp:.1f}점 (기준 {data['ou_line']} 언더)"
                 else: ou_text = f"⚠️ 총 {total_exp:.1f}점 (기준 {data['ou_line']} 패스)"
                 
-                st.markdown(f"<div class='sim-box'><div style='text-align:center; font-weight:bold; font-size:14px
+                st.markdown(f"<div class='sim-box'><div style='text-align:center; font-weight:bold; font-size:14px'>내용</div></div>")
