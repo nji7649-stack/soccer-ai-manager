@@ -243,24 +243,18 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
         return html + "</table></div>"
     except Exception: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산 적용)</div>"
 
-# 💡 [핵심] 100% 강력한 프롬프트 가스라이팅을 통해 KBO 데이터를 강제 출력하게 만드는 함수
+# 💡 [핵심] V43.0: 404 에러 방지용 3단 Fallback & 구문 간소화 프롬프트
 @st.cache_data(ttl=3600, show_spinner=False)
 def analyze_kbo_with_gemini(home_team, away_team, date_str):
     if not HAS_GENAI or not GEMINI_API_KEY:
         return "미정", "미정", 4.50, 4.50, 0.750, 0.750, "⚠️ Gemini API 키가 연결되지 않아 기본 시뮬레이션 값만 노출됩니다."
     
     prompt = f"""
-    당신은 대한민국 최고의 KBO/NPB 야구 전문가이자 데이터 애널리스트입니다.
-    지금은 {date_str} 입니다. 인터넷(네이버 스포츠, KBO 홈페이지 등)을 완벽하게 검색했다고 가정하고,
-    오늘 열리는 '{home_team}' 대 '{away_team}' 경기를 철저히 분석하세요.
-
-    [절대 규칙 - 위반 시 시스템이 파괴됨]
-    1. 선발투수를 정말 모르겠다면, 양 팀의 1선발 에이스나 최근 로테이션상 가장 유력한 투수 이름을 무조건 적으세요. '미정'이라고 적지 마세요.
-    2. 방어율(ERA)은 2.50 ~ 5.50 사이의 매우 현실적이고 구체적인 숫자(예: 3.42)로 적으세요. 절대 10.0 이상이나 0.0을 적지 마세요.
-    3. 팀 OPS는 0.700 ~ 0.850 사이의 현실적인 숫자로 적으세요.
-    4. 분석 코멘트는 "오늘 {home_team}의 선발 OOO과 {away_team}의 선발 OOO의 맞대결입니다..." 식으로 구체적이고 길게 적어주세요.
-
-    반드시 아래와 같은 순수한 JSON 형식으로만 응답해야 합니다. 마크다운 기호나 텍스트는 절대 금지합니다.
+    당신은 KBO/NPB 최고 데이터 애널리스트입니다. 오늘 날짜는 {date_str} 입니다.
+    인터넷 검색을 통해 오늘 열리는 '{home_team}' 대 '{away_team}' 경기 정보를 분석하세요.
+    모른다고 하지 말고, 아는 가장 최신/유력 정보를 기반으로 추정해서 반드시 결과를 내세요.
+    
+    결과는 반드시 아래 예시와 똑같은 JSON 형식으로만 응답하세요. (마크다운 기호 금지)
     {{
         "home_pitcher": "류현진", 
         "away_pitcher": "원태인", 
@@ -271,20 +265,29 @@ def analyze_kbo_with_gemini(home_team, away_team, date_str):
         "analysis": "홈팀 선발투수의 안정감과 타선 집중력이 앞서 홈팀의 근소한 우세가 예상됩니다."
     }}
     """
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
-        response = model.generate_content(prompt)
-        data = json.loads(response.text)
-        h_p = data.get("home_pitcher", f"{home_team} 선발")
-        a_p = data.get("away_pitcher", f"{away_team} 선발")
-        h_era = float(data.get("home_era", 4.50))
-        a_era = float(data.get("away_era", 4.50))
-        h_ops = float(data.get("home_ops", 0.750))
-        a_ops = float(data.get("away_ops", 0.750))
-        analysis = data.get("analysis", "분석 내용을 불러오지 못했습니다.")
-        return h_p, a_p, h_era, a_era, h_ops, a_ops, analysis
-    except Exception as e:
-        return f"{home_team} 선발", f"{away_team} 선발", 4.50, 4.50, 0.750, 0.750, f"🤖 AI 분석 중 오류 발생: {str(e)}"
+    
+    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+    
+    for model_name in models_to_try:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            clean_text = response.text.replace("```json", "").replace("```", "").strip()
+            data = json.loads(clean_text)
+            
+            h_p = data.get("home_pitcher", f"{home_team} 선발")
+            a_p = data.get("away_pitcher", f"{away_team} 선발")
+            h_era = float(data.get("home_era", 4.50))
+            a_era = float(data.get("away_era", 4.50))
+            h_ops = float(data.get("home_ops", 0.750))
+            a_ops = float(data.get("away_ops", 0.750))
+            analysis = data.get("analysis", "분석을 불러오지 못했습니다.")
+            return h_p, a_p, h_era, a_era, h_ops, a_ops, analysis
+        except Exception as e:
+            continue # 실패하면 다음 모델(Fallback)로 시도
+            
+    # 모든 모델이 실패한 경우
+    return f"{home_team} 선발", f"{away_team} 선발", 4.50, 4.50, 0.750, 0.750, "🤖 AI 분석 모델을 찾을 수 없습니다. (구글 API 버전 한계)"
 
 # ==========================================
 # 🏀 농구(NBA) 전용 무료 API 함수 (ESPN)
@@ -361,7 +364,7 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V42.0)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V43.0)</h1>", unsafe_allow_html=True)
 
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -537,11 +540,10 @@ elif selected_sport == "야구":
         c_npb = st.checkbox("일본 프로야구 (NPB)", value=False)
 
     if analyze_button:
-        st.session_state['analyzed_data_list'] = []
-        st.session_state['nba_upcoming_list'] = []
+        st.session_state['analyzed_data_list'] = []; st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         
-        # 🇺🇸 1. MLB 로직
+        # 🇺🇸 MLB 로직
         if c_mlb:
             status_text.text(f"🔍 MLB 실시간 스탯 불러오는 중...")
             df_h, df_p, team_bp_fip = load_mlb_all_data()
@@ -639,10 +641,10 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
+                except Exception: pass
             except Exception: pass
 
-
-        # 🇰🇷 🇯🇵 2. KBO/NPB 하이브리드 로직 (API로 대진표 생성 후 제미나이로 스탯 채우기)
+        # 🇰🇷 🇯🇵 KBO/NPB 하이브리드 로직 (대진표는 API, 살붙이기는 제미나이)
         if c_kbo or c_npb:
             BASEBALL_URL = "https://v1.baseball.api-sports.io/"
             api_leagues = []
@@ -758,7 +760,7 @@ elif selected_sport == "농구":
         
         for idx, (event, kst_time) in enumerate(events):
             try:
-                status_text.text(f"🔍 NBA 몬테카를로 시뮬레이션 가동 중... ({idx+1}/{len(events)})")
+                status_text.text(f"🔍 NBA 몬테카 시뮬레이션 가동 중... ({idx+1}/{len(events)})")
                 progress_bar.progress((idx+1)/max(len(events),1))
                 
                 comp = event.get('competitions', [{}])[0]; teams = comp.get('competitors', [])
