@@ -218,19 +218,29 @@ def load_mlb_live_lineup(game_pk, home_pitcher_id, away_pitcher_id):
         res = requests.get(f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore").json()
         h_players = res.get('teams', {}).get('home', {}).get('players', {})
         a_players = res.get('teams', {}).get('away', {}).get('players', {})
-        h_p_hand = 'R'; a_p_hand = 'R'
-        if home_pitcher_id: h_p_hand = h_players.get(f"ID{home_pitcher_id}", h_players.get(f"ID_{home_pitcher_id}", {})).get('person', {}).get('pitchHand', {}).get('code', 'R')
-        if away_pitcher_id: a_p_hand = a_players.get(f"ID{away_pitcher_id}", a_players.get(f"ID_{away_pitcher_id}", {})).get('person', {}).get('pitchHand', {}).get('code', 'R')
+        
+        h_p_hand = 'R'
+        if home_pitcher_id:
+            p_obj = h_players.get(f"ID{home_pitcher_id}", h_players.get(f"ID_{home_pitcher_id}", {}))
+            h_p_hand = p_obj.get('person', {}).get('pitchHand', {}).get('code', 'R')
+            
+        a_p_hand = 'R'
+        if away_pitcher_id:
+            p_obj = a_players.get(f"ID{away_pitcher_id}", a_players.get(f"ID_{away_pitcher_id}", {}))
+            a_p_hand = p_obj.get('person', {}).get('pitchHand', {}).get('code', 'R')
 
         h_lineup, a_lineup = [], []
         for pid in res.get('teams', {}).get('home', {}).get('battingOrder', []):
             p = h_players.get(f"ID{pid}", h_players.get(f"ID_{pid}", {}))
             if p: h_lineup.append({'name': p.get('person', {}).get('fullName', 'Unknown'), 'batSide': p.get('person', {}).get('batSide', {}).get('code', 'R')})
+                
         for pid in res.get('teams', {}).get('away', {}).get('battingOrder', []):
             p = a_players.get(f"ID{pid}", a_players.get(f"ID_{pid}", {}))
             if p: a_lineup.append({'name': p.get('person', {}).get('fullName', 'Unknown'), 'batSide': p.get('person', {}).get('batSide', {}).get('code', 'R')})
+                
         return h_lineup, a_lineup, h_p_hand, a_p_hand
-    except: return [], [], 'R', 'R'
+    except:
+        return [], [], 'R', 'R'
 
 def calculate_platoon_ops(lineup, df_hitters, opp_p_hand, base_team_ops):
     if not lineup: return base_team_ops
@@ -273,7 +283,7 @@ def get_baseball_detailed_html(home_team, away_team, h_p, a_p, h_s_fip, a_s_fip,
     </table></div>"""
 
 def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
-    if not h_lineup or not a_lineup: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산)</div>"
+    if not h_lineup or not a_lineup: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산 적용)</div>"
     m_len = max(len(h_lineup), len(a_lineup))
     h_strs = [f"{b['name']} ({b['batSide']})" for b in h_lineup]
     a_strs = [f"{b['name']} ({b['batSide']})" for b in a_lineup]
@@ -285,7 +295,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V30.0)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V30.1)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -300,7 +310,7 @@ if 'analyzed_data_list' not in st.session_state:
     st.session_state['analyzed_data_list'] = []
 
 # ==========================================
-# ⚽ 축구 로직 (단 한 줄도 생략 없음!)
+# ⚽ 축구 로직
 # ==========================================
 if selected_sport == "축구":
     analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
@@ -439,12 +449,8 @@ if selected_sport == "축구":
 
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
-                        if actual == pred_winner:
-                            win_pick += " (적중)"
-                            pick_color = "#ffcc00"
-                        else:
-                            win_pick += " (미적중)"
-                            pick_color = "#ff5252"
+                        if actual == pred_winner: win_pick += " (적중)"; pick_color = "#ffcc00"
+                        else: win_pick += " (미적중)"; pick_color = "#ff5252"
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
                     stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
@@ -500,7 +506,7 @@ elif selected_sport == "야구":
         progress_bar = st.progress(0); status_text = st.empty()
         new_data_list = []
         
-        # 1. MLB 처리 로직 (statsapi)
+        # 1. MLB 처리 로직
         if c_mlb:
             status_text.text(f"🔍 MLB 실시간 스탯 불러오는 중...")
             df_h, df_p, team_bp_fip = load_mlb_all_data()
@@ -801,6 +807,7 @@ if st.session_state.get('analyzed_data_list'):
             """
             st.markdown(html_str, unsafe_allow_html=True)
             
+            # 💡 핵심: 축구와 야구(KBO/NPB) 모두 레이더 차트가 렌더링되도록 제한(if data['sport']=="축구") 삭제
             with st.expander("🔍 상세 지표 & 선발 명단 확인"):
                 if data.get('radar_html'): st.markdown(data['radar_html'], unsafe_allow_html=True)
                 if data.get('detail_html'): st.markdown(data['detail_html'], unsafe_allow_html=True)
