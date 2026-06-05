@@ -9,7 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS (사이드바 아이콘 복구 및 레이아웃 완벽 정렬)
+# 🎨 UI CSS
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
@@ -54,7 +54,6 @@ custom_css = """
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 .sim-box { background-color:#0a0a14; padding:15px; border-radius:8px; border:1px solid #4FC3F7; margin-top:10px; }
 
-/* 💡 종목 선택 아이콘 복구 CSS */
 [data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }
 [data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }
@@ -123,42 +122,59 @@ def safe_num(value):
 
 def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '종합전력']
-    size = 220; center = size / 2; max_val = 100
+    size = 220
+    center = size / 2
+    max_val = 100
+    
     def get_poly(vals, bc, fc):
         pts = [f"{center + (v/max_val)*(size*0.35)*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (v/max_val)*(size*0.35)*math.sin((math.pi*2/6)*i - math.pi/2)}" for i, v in enumerate(vals)]
         return f"<polygon points='{' '.join(pts)}' style='fill:{fc}; stroke:{bc}; stroke-width:2; opacity:0.6;' />"
+    
     svg = ""
     for i in range(6):
         ang = (math.pi * 2 / 6) * i - (math.pi / 2)
-        x = center + (size * 0.35) * math.cos(ang); y = center + (size * 0.35) * math.sin(ang)
+        x = center + (size * 0.35) * math.cos(ang)
+        y = center + (size * 0.35) * math.sin(ang)
         svg += f"<line x1='{center}' y1='{center}' x2='{x}' y2='{y}' style='stroke:#444; stroke-width:1;' />"
-        lx = center + (size * 0.44) * math.cos(ang); ly = center + (size * 0.44) * math.sin(ang)
+        lx = center + (size * 0.44) * math.cos(ang)
+        ly = center + (size * 0.44) * math.sin(ang)
         anchor = "start" if lx > center + 10 else ("end" if lx < center - 10 else "middle")
         svg += f"<text x='{lx}' y='{ly+4}' fill='#ddd' font-size='10' font-weight='bold' text-anchor='{anchor}'>{labels[i]}</text>"
+        
     for ratio in [0.33, 0.66, 1.0]:
         pts = [f"{center + (size*0.35)*ratio*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (size*0.35)*ratio*math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)]
         svg += f"<polygon points='{' '.join(pts)}' style='fill:none; stroke:#333; stroke-width:1;' />"
+        
     h_poly = get_poly(h_vals, "#4FC3F7", "rgba(79, 195, 247, 0.3)") 
     a_poly = get_poly(a_vals, "#EF5350", "rgba(239, 83, 80, 0.3)") 
-    badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 전력 분석망 데이터</div>" if not is_custom else "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 AI 데이터 연산</div>"
+    badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 전력 분석망 가동</div>"
+    
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
+# ==========================================
+# ⚽ 축구 전용 함수
+# ==========================================
 def fetch_custom_team_stats(team_id, season_year):
     try:
         url = "https://v3.football.api-sports.io/fixtures"
         res = requests.get(url, headers=HEADERS, params={"team": team_id, "last": 5, "season": season_year}).json()
         fixtures = res.get('response') or []
-        if not fixtures: return 10, 10, 10 
-        wins, goals_for, goals_against = 0, 0, 0
+        if not fixtures: 
+            return 10, 10, 10 
+        wins = 0
+        goals_for = 0
+        goals_against = 0
         for match in fixtures:
             is_home = match['teams']['home']['id'] == team_id
             h_g = match['goals']['home'] if match['goals']['home'] is not None else 0
             a_g = match['goals']['away'] if match['goals']['away'] is not None else 0
             if is_home:
-                goals_for += h_g; goals_against += a_g
+                goals_for += h_g
+                goals_against += a_g
                 if h_g > a_g: wins += 1
             else:
-                goals_for += a_g; goals_against += h_g
+                goals_for += a_g
+                goals_against += h_g
                 if a_g > h_g: wins += 1
         return (wins / 5) * 100, min((goals_for / 15) * 100, 100), max(100 - (goals_against / 10) * 100, 0)
     except Exception: 
@@ -194,6 +210,9 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
     except Exception: 
         return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표</div>"
 
+# ==========================================
+# ⚾ 야구(MLB) 전용 함수
+# ==========================================
 MLB_PARK_FACTORS = {
     'Colorado Rockies': 1.12, 'Cincinnati Reds': 1.08, 'Boston Red Sox': 1.07, 'Texas Rangers': 1.05,
     'Chicago White Sox': 1.04, 'Atlanta Braves': 1.03, 'Los Angeles Dodgers': 1.03, 'Philadelphia Phillies': 1.02,
@@ -279,7 +298,9 @@ def run_mlb_simulation(h_fip, a_fip, h_avg_ip, a_avg_ip, h_ops, a_ops, h_bp_fip,
     a_eff_fip = (a_fip * a_starter_w) + (a_bp_fip * (1 - a_starter_w))
     h_expected_runs = ((a_eff_fip * (h_ops / 0.720)) + 0.2) * park_factor
     a_expected_runs = (h_eff_fip * (a_ops / 0.720)) * park_factor
-    h_wins, a_wins = 0, 0
+    
+    h_wins = 0
+    a_wins = 0
     h_tie_win_prob = h_expected_runs / (h_expected_runs + a_expected_runs) if (h_expected_runs + a_expected_runs) > 0 else 0.5
     for _ in range(num_sims):
         h_score = max(0, int(random.gauss(h_expected_runs, 2.3)))
@@ -300,15 +321,18 @@ def get_baseball_detailed_html(home_team, away_team, h_p, a_p, h_s_fip, a_s_fip,
 
 def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
     try:
-        if not h_lineup and not a_lineup: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산)</div>"
+        if not h_lineup and not a_lineup: 
+            return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산)</div>"
         m_len = max(len(h_lineup), len(a_lineup))
         h_strs = [f"{b['name']} ({b['batSide']})" for b in h_lineup]
         a_strs = [f"{b['name']} ({b['batSide']})" for b in a_lineup]
         h_strs += [""] * (m_len - len(h_strs))
         a_strs += [""] * (m_len - len(a_strs))
         html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{home_team} (타석)</th><th style='color:#EF5350;'>{away_team} (타석)</th></tr>"
-        for i, (h, a) in enumerate(zip(h_strs, a_strs)): html += f"<tr><td>{i+1}. {h}</td><td>{i+1}. {a}</td></tr>"
-        return html + "</table></div>"
+        for i, (h, a) in enumerate(zip(h_strs, a_strs)): 
+            html += f"<tr><td>{i+1}. {h}</td><td>{i+1}. {a}</td></tr>"
+        html += "</table></div>"
+        return html
     except Exception: 
         return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산)</div>"
 
@@ -360,7 +384,8 @@ def get_nba_details_html(event_id, h_team_name, a_team_name):
             h_strs += [""] * (m_len - len(h_strs))
             a_strs += [""] * (m_len - len(a_strs))
             lineup_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{h_team_name} (선발/주요)</th><th style='color:#EF5350;'>{a_team_name} (선발/주요)</th></tr>"
-            for h, a in zip(h_strs, a_strs): lineup_html += f"<tr><td>{h}</td><td>{a}</td></tr>"
+            for h, a in zip(h_strs, a_strs): 
+                lineup_html += f"<tr><td>{h}</td><td>{a}</td></tr>"
             lineup_html += "</table></div>"
         else:
             lineup_html = "<div style='text-align:center; padding:10px; color:#888;'>라인업 데이터 수집 대기 중</div>"
@@ -423,8 +448,9 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
 # ==========================================
 st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V36.0)</h1>", unsafe_allow_html=True)
 
-sport_options = ["축구", "야구", "농구", "배구"]
-selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
+sport_options = ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"]
+selected_sport_raw = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
+selected_sport = selected_sport_raw.split(" ")[1]
 st.sidebar.markdown("---")
 
 kst_now = datetime.utcnow() + timedelta(hours=9)
@@ -486,7 +512,8 @@ if selected_sport == "축구":
                 for match in (res.get('response') or []):
                     try:
                         fix_id = str(match['fixture']['id'])
-                        home_id = match['teams']['home']['id']; away_id = match['teams']['away']['id']
+                        home_id = match['teams']['home']['id']
+                        away_id = match['teams']['away']['id']
                         home_kr = translate_to_ko(match['teams']['home']['name'])
                         away_kr = translate_to_ko(match['teams']['away']['name'])
                         home_logo = match['teams']['home']['logo']
@@ -624,7 +651,13 @@ if selected_sport == "축구":
                         advice = translate_to_ko(pred.get('predictions', {}).get('advice', '분석 완료'))
                         ref_text = f"👨‍⚖️ 주심: {referee} | 🏟️ {venue}"
 
-                        new_data_list.append({"sport": "축구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": ref_text, "p_h": p_h, "p_d": p_d, "p_a": p_a, "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", "control_pick": advice, "over_under": over_under, "handi_pick": "", "radar_html": radar_html, "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html})
+                        new_data_list.append({
+                            "sport": "축구", "league": top_league_display, "match_display": match_display, 
+                            "stat_box": stat_box, "referee": ref_text, "p_h": p_h, "p_d": p_d, "p_a": p_a, 
+                            "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", 
+                            "control_pick": advice, "over_under": over_under, "handi_pick": "", "radar_html": radar_html, 
+                            "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html
+                        })
                     except Exception: 
                         pass
             except Exception: 
@@ -804,9 +837,15 @@ elif selected_sport == "야구":
                     lineup_html = get_baseball_lineup_html(home_kr, away_kr, h_lineup, a_lineup)
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
-                    st.session_state['analyzed_data_list'].append({"sport": "야구", "league": top_league_display, "match_display": match_display, "stat_box": stat_box, "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": lineup_html, "detail_html": detail_html, "radar_html": ""})
-            except Exception: 
-                pass
+                    st.session_state['analyzed_data_list'].append({
+                        "sport": "야구", "league": top_league_display, "match_display": match_display, 
+                        "stat_box": stat_box, "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", 
+                        "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", 
+                        "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": lineup_html, 
+                        "detail_html": detail_html, "radar_html": ""
+                    })
+                except Exception: 
+                    pass
             except Exception: 
                 pass
 
@@ -1061,7 +1100,13 @@ elif selected_sport == "농구":
                 
                 stat_detail, lineup_detail = get_nba_details_html(event['id'], h_kr, a_kr)
                 
-                new_data_list.append({"sport": "농구", "league": top_display, "match_display": match_display, "stat_box": stat_box, "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": handi_color, "control_pick": "Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", "over_under": ou_text, "handi_pick": handi_pick, "lineup_html": lineup_detail, "detail_html": stat_detail, "radar_html": ""})
+                new_data_list.append({
+                    "sport": "농구", "league": top_display, "match_display": match_display, "stat_box": stat_box, 
+                    "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", 
+                    "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": handi_color, 
+                    "control_pick": "Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", "over_under": ou_text, 
+                    "handi_pick": handi_pick, "lineup_html": lineup_detail, "detail_html": stat_detail, "radar_html": ""
+                })
             except Exception: 
                 pass
         
