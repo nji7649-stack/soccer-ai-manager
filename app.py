@@ -9,7 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS
+# 🎨 UI CSS (에러 유발 아이콘 코드 완전 삭제, 기본 이모지로 대체)
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -382,7 +382,7 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
         else: a_wins += 1
     return (h_wins/num_sims)*100, (a_wins/num_sims)*100, exp_h, exp_a
 
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V34.2)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V35.0)</h1>", unsafe_allow_html=True)
 
 sport_options = ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"]
 selected_sport_raw = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -561,9 +561,7 @@ elif selected_sport == "야구":
         c_npb = st.checkbox("일본 프로야구 (NPB)", value=False)
 
     if analyze_button:
-        st.session_state['analyzed_data_list'] = []
-        st.session_state['kbo_npb_data_list'] = []
-        st.session_state['nba_upcoming_list'] = []
+        st.session_state['analyzed_data_list'] = []; st.session_state['kbo_npb_data_list'] = []; st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         
         if c_mlb:
@@ -751,7 +749,7 @@ elif selected_sport == "야구":
         progress_bar.progress(1.0); status_text.text("✅ 야구 스캔 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
 
 # ==========================================
-# 🏀 농구 로직
+# 🏀 농구 (무료 실시간 ESPN API 연동)
 # ==========================================
 elif selected_sport == "농구":
     analyze_button = st.sidebar.button("🚀 NBA 데이터 딥-스캔 시작", use_container_width=True)
@@ -765,6 +763,7 @@ elif selected_sport == "농구":
         status_text.text("🔍 ESPN 실시간 NBA 데이터망 접속 중...")
         
         events = load_nba_games_free(selected_date)
+        new_data_list = []
         
         if not events: st.info(f"해당 날짜({selected_date})에 한국시간 기준으로 진행되는 NBA 경기가 없습니다.")
         
@@ -873,10 +872,11 @@ elif selected_sport == "농구":
                 
                 stat_detail, lineup_detail = get_nba_details_html(event['id'], h_kr, a_kr)
                 
-                st.session_state['analyzed_data_list'].append({"sport": "농구", "league": top_display, "match_display": match_display, "stat_box": stat_box, "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": handi_color, "control_pick": "Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", "over_under": ou_text, "handi_pick": handi_pick, "lineup_html": lineup_detail, "detail_html": stat_detail, "radar_html": ""})
+                new_data_list.append({"sport": "농구", "league": top_display, "match_display": match_display, "stat_box": stat_box, "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": handi_color, "control_pick": "Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", "over_under": ou_text, "handi_pick": handi_pick, "lineup_html": lineup_detail, "detail_html": stat_detail, "radar_html": ""})
             except Exception as e: pass
         
         progress_bar.progress(1.0); status_text.text("✅ NBA 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
+        st.session_state['analyzed_data_list'] = new_data_list
 
 # ==========================================
 # 🏐 배구 (추후 업데이트)
@@ -889,7 +889,7 @@ elif selected_sport == "배구":
 # ==========================================
 # 📺 공통 렌더링 엔진 (출력부)
 # ==========================================
-# 1. 자동 분석 (축구, MLB, NBA 지난 경기) 렌더링
+# 1. 자동 분석 렌더링
 if st.session_state.get('analyzed_data_list'):
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['analyzed_data_list']):
@@ -943,7 +943,6 @@ if selected_sport == "야구" and st.session_state.get('kbo_npb_data_list'):
             
             with st.expander("🔬 반자동 시뮬레이터 가동", expanded=True):
                 st.markdown("<div style='font-size:11.5px; color:#aaa; margin-bottom:10px;'>※ 오늘 <b>선발투수 방어율</b>과 <b>팀 시즌 OPS</b>를 입력 시 5,000회 시뮬레이션이 돌아갑니다.</div>", unsafe_allow_html=True)
-                
                 h_name = data.get('home_kr', '홈'); a_name = data.get('away_kr', '원정')
                 c1, c2 = st.columns(2)
                 h_era = c1.number_input(f"[{h_name}] 방어율", min_value=0.0, max_value=15.0, value=4.50, step=0.1, key=f"h_era_{data['game_id']}")
@@ -953,7 +952,6 @@ if selected_sport == "야구" and st.session_state.get('kbo_npb_data_list'):
                 a_ops = c4.number_input(f"[{a_name}] 팀 OPS", min_value=0.0, max_value=1.500, value=0.750, step=0.005, format="%.3f", key=f"a_ops_{data['game_id']}")
                 
                 h_win_sim, a_win_sim, h_exp_sim, a_exp_sim = run_mlb_simulation(h_era, a_era, 5.5, 5.5, h_ops, a_ops, 4.5, 4.5, 1.0)
-                
                 if h_win_sim > a_win_sim + 5: win_pick = f"🟢 {h_name} 승리 유력"; pick_color = "#00E676"
                 elif a_win_sim > h_win_sim + 5: win_pick = f"🔵 {a_name} 승리 유력"; pick_color = "#4FC3F7"
                 else: win_pick = "🟡 팽팽한 접전"; pick_color = "#ff9800"
