@@ -572,7 +572,7 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
-                except Exception: pass
+
             except Exception: pass
 
         # 🇰🇷 🇯🇵 KBO/NPB 스캐너 (안정적인 수동 시뮬레이터로 원상 복구)
@@ -635,7 +635,7 @@ elif selected_sport == "야구":
                             
                             # KBO는 가장 완벽하게 돌아갔던 "수동 시뮬레이터" 모드로 데이터를 저장합니다
                             st.session_state['kbo_npb_data_list'].append(dict(game_id=game_id, league=top_display, match_display=match_display, home_kr=home_kr, away_kr=away_kr, odds_h=odds_h, odds_a=odds_a, ou_line=ou_line, status=status_short, h_score=h_score, a_score=a_score, is_finished=is_finished))
-                        except Exception: pass
+
                 except Exception: pass
         if len(st.session_state['analyzed_data_list']) == 0 and len(st.session_state['kbo_npb_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다. (미래 날짜일 경우 KBO API에서 지원하지 않습니다.)")
         progress_bar.progress(1.0); status_text.text("✅ 종합 야구 자동 스캔 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
