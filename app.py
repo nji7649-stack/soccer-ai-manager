@@ -7,21 +7,28 @@ import time
 import random
 import math
 import json
-import google.generativeai as genai
+
+# 💡 [핵심] 구글 AI 모듈이 설치 안 되어 있어도 앱이 뻗지 않도록 방탄 처리
+try:
+    import google.generativeai as genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🔑 API 키 셋팅 (축구 & Gemini)
+# 🔑 API 키 셋팅
 FOOTBALL_API_KEY = st.secrets["FOOTBALL_API_KEY"] if "FOOTBALL_API_KEY" in st.secrets else ""
 HEADERS = {'x-apisports-key': FOOTBALL_API_KEY}
 
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else ""
-if GEMINI_API_KEY:
+if HAS_GENAI and GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# 🎨 UI CSS
+# 🎨 UI CSS (종목 선택 멋진 아이콘 완벽 복구)
 custom_css = """
 <style>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 .stApp { background-color: #0e1117; }
 .card-box {
     background-color: #1e1e1e; padding: 20px; border-radius: 12px; 
@@ -62,6 +69,19 @@ custom_css = """
 .detail-table td { padding: 8px 5px; border-bottom: 1px solid #2a2a2a; word-wrap: break-word; } 
 .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
 .sim-box { background-color:#0a0a14; padding:15px; border-radius:8px; border:1px solid #4FC3F7; margin-top:10px; }
+
+[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }
+[data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 22px; color: #ffffff; background-color: #151515; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: all 0.3s ease; border: 2px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:hover::before { border-color: #666; transform: translateY(-2px); }
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before { border-color: #00E676 !important; color: #00E676 !important; background-color: #151515 !important; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -132,9 +152,6 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 전력 분석망 데이터</div>" if not is_custom else "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 AI 데이터 연산</div>"
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
-# ==========================================
-# ⚽ 축구 전용 함수
-# ==========================================
 def fetch_custom_team_stats(team_id, season_year):
     try:
         url = "https://v3.football.api-sports.io/fixtures"
@@ -180,9 +197,6 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
         return html
     except Exception: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표</div>"
 
-# ==========================================
-# ⚾ 야구(MLB & KBO AI) 전용 함수
-# ==========================================
 MLB_PARK_FACTORS = {
     'Colorado Rockies': 1.12, 'Cincinnati Reds': 1.08, 'Boston Red Sox': 1.07, 'Texas Rangers': 1.05,
     'Chicago White Sox': 1.04, 'Atlanta Braves': 1.03, 'Los Angeles Dodgers': 1.03, 'Philadelphia Phillies': 1.02,
@@ -299,7 +313,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # 💡 [핵심] KBO 데이터를 구글 제미나이(LLM)에게 물어보는 자동화 함수
 @st.cache_data(ttl=3600)
 def get_kbo_stats_from_gemini(home_team, away_team, date_str):
-    if not GEMINI_API_KEY:
+    if not HAS_GENAI or not GEMINI_API_KEY:
         return 4.50, 4.50, 0.750, 0.750 
     
     prompt = f"""
@@ -308,13 +322,11 @@ def get_kbo_stats_from_gemini(home_team, away_team, date_str):
     오늘 열리는 한국프로야구(KBO) 또는 일본프로야구(NPB) '{home_team}' vs '{away_team}' 경기에 대해 검색하여 아래 정보를 찾아주세요.
     1. 홈팀({home_team}) 예상 선발투수 방어율(ERA)
     2. 원정팀({away_team}) 예상 선발투수 방어율(ERA)
-    3. 홈팀({home_team}) 시즌 팀 OPS
-    4. 원정팀({away_team}) 시즌 팀 OPS
+    3. 홈팀({home_team}) 시즌 팀 평균 OPS
+    4. 원정팀({away_team}) 시즌 팀 평균 OPS
     
-    결과는 반드시 아래와 같은 순수한 JSON 형식으로만 반환해야 합니다. 다른 말이나 마크다운(`)은 절대 붙이지 마세요.
+    결과는 반드시 아래와 같은 순수한 JSON 형식으로만 반환해야 합니다. 다른 말이나 마크다운 기호는 절대 붙이지 마세요.
     {{"home_era": 3.45, "away_era": 4.12, "home_ops": 0.780, "away_ops": 0.750}}
-    
-    만약 선발투수를 모르겠거나 데이터가 없으면 방어율은 4.50, OPS는 0.750 으로 입력하세요.
     """
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
@@ -322,7 +334,7 @@ def get_kbo_stats_from_gemini(home_team, away_team, date_str):
         text = response.text.replace("```json", "").replace("```", "").replace("\n", "").strip()
         data = json.loads(text)
         return float(data.get("home_era", 4.50)), float(data.get("away_era", 4.50)), float(data.get("home_ops", 0.750)), float(data.get("away_ops", 0.750))
-    except Exception:
+    except Exception as e:
         return 4.50, 4.50, 0.750, 0.750 
 
 # ==========================================
@@ -429,7 +441,12 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V37.0 AI 완전자동판)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V38.0)</h1>", unsafe_allow_html=True)
+
+if not HAS_GENAI:
+    st.error("🚨 깃허브 requirements.txt에 'google-generativeai'가 설치되지 않아 KBO/NPB 자동 AI 수집이 작동하지 않습니다.")
+elif not GEMINI_API_KEY:
+    st.warning("⚠️ Streamlit Secrets에 GEMINI_API_KEY가 등록되지 않아, KBO는 수동 입력 모드로 작동합니다.")
 
 sport_options = ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"]
 selected_sport_raw = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -627,13 +644,15 @@ if selected_sport == "축구":
                         advice = translate_to_ko(pred.get('predictions', {}).get('advice', '분석 완료'))
                         ref_text = f"👨‍⚖️ 주심: {referee} | 🏟️ {venue}"
 
-                        st.session_state['analyzed_data_list'].append({
+                        # 💡 화면 노출 방지(안전 변수 사용)
+                        analyzed_item = {
                             "sport": "축구", "league": top_league_display, "match_display": match_display, 
                             "stat_box": stat_box, "referee": ref_text, "p_h": p_h, "p_d": p_d, "p_a": p_a, 
                             "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", 
                             "control_pick": advice, "over_under": over_under, "handi_pick": "", "radar_html": radar_html, 
                             "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html
-                        })
+                        }
+                        st.session_state['analyzed_data_list'].append(analyzed_item)
                     except Exception: 
                         pass
             except Exception: 
@@ -812,15 +831,17 @@ elif selected_sport == "야구":
                     lineup_html = get_baseball_lineup_html(home_kr, away_kr, h_lineup, a_lineup)
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
-                    st.session_state['analyzed_data_list'].append({
+                    # 💡 화면 노출 방지(안전 변수 사용)
+                    mlb_item = {
                         "sport": "야구", "league": top_league_display, "match_display": match_display, 
                         "stat_box": stat_box, "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", 
                         "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", 
                         "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": lineup_html, 
                         "detail_html": detail_html, "radar_html": ""
-                    })
-            except Exception: 
-                pass
+                    }
+                    st.session_state['analyzed_data_list'].append(mlb_item)
+                except Exception: 
+                    pass
             except Exception: 
                 pass
 
@@ -897,11 +918,9 @@ elif selected_sport == "야구":
                                                         pass
                                                     break
                             
-                            # 💡 [핵심] Gemini AI 자동 분석 연동 구간
                             status_text.text(f"🤖 Gemini AI가 {home_kr} vs {away_kr} 스탯 분석 중... ({g_idx+1}/{len(games)})")
                             h_era, a_era, h_ops, a_ops = get_kbo_stats_from_gemini(home_kr, away_kr, selected_date.strftime('%Y-%m-%d'))
                             
-                            # 가져온 데이터로 즉시 시뮬레이션 가동
                             h_win_prob, a_win_prob, h_exp_runs, a_exp_runs = run_mlb_simulation(h_era, a_era, 5.5, 5.5, h_ops, a_ops, 4.5, 4.5, 1.0)
                             
                             if h_win_prob > a_win_prob + 10: 
@@ -959,13 +978,15 @@ elif selected_sport == "야구":
                                 <tr><td>{h_ops:.3f}</td><td style='font-size:11px;'>예상 팀 OPS</td><td>{a_ops:.3f}</td></tr>
                             </table></div>"""
 
-                            st.session_state['analyzed_data_list'].append({
+                            # 💡 화면 노출 방지(안전 변수 사용)
+                            kbo_item = {
                                 "sport": "야구", "league": top_display, "match_display": match_display, 
                                 "stat_box": stat_box, "referee": "🤖 AI 자동 분석", "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", 
                                 "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": "#ddd", 
                                 "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": "", 
                                 "detail_html": detail_html, "radar_html": ""
-                            })
+                            }
+                            st.session_state['analyzed_data_list'].append(kbo_item)
                         except Exception: 
                             pass
                 except Exception: 
@@ -1125,11 +1146,13 @@ elif selected_sport == "농구":
                         handi_pick += " (미적중)"
                         handi_color = "#F48FB1"
 
-                if status == 'pre': 
-                    st.session_state['nba_upcoming_list'].append({
+                if status == 'pre':
+                    # 💡 화면 노출 방지(안전 변수 사용) 
+                    upcoming_item = {
                         "event_id": event['id'], "league": top_display, "match_display": match_display,
                         "home_kr": h_kr, "away_kr": a_kr, "ou_line": ou_line, "spread": home_spread_margin, "details": details
-                    })
+                    }
+                    st.session_state['nba_upcoming_list'].append(upcoming_item)
                     continue
                 
                 stat_box = f"<span style='color:#aaa;'>Vegas 기준점:</span> <b>{details}</b> (언오버 <b>{ou_line}</b>)<br><span style='color:#aaa;'>AI 기대 득점:</span> {h_kr} <b>{h_exp:.1f}</b> vs <b>{a_exp:.1f}</b> {a_kr}"
@@ -1138,13 +1161,15 @@ elif selected_sport == "농구":
                 
                 stat_detail, lineup_detail = get_nba_details_html(event['id'], h_kr, a_kr)
                 
-                st.session_state['analyzed_data_list'].append({
+                # 💡 화면 노출 방지(안전 변수 사용)
+                nba_analyzed_item = {
                     "sport": "농구", "league": top_display, "match_display": match_display, "stat_box": stat_box, 
                     "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", 
                     "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": handi_color, 
                     "control_pick": "Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", "over_under": ou_text, 
                     "handi_pick": handi_pick, "lineup_html": lineup_detail, "detail_html": stat_detail, "radar_html": ""
-                })
+                }
+                st.session_state['analyzed_data_list'].append(nba_analyzed_item)
             except Exception: 
                 pass
         
