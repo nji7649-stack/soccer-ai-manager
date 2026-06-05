@@ -592,7 +592,7 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
-           
+                except Exception: pass
             except Exception: pass
 
         # 🇰🇷 🇯🇵 KBO/NPB 하이브리드 로직
@@ -687,8 +687,8 @@ elif selected_sport == "야구":
                             detail_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:40%;'>{home_kr}</th><th style='width:20%; color:#aaa;'>Gemini AI 스탯</th><th style='color:#EF5350; width:40%;'>{away_kr}</th></tr><tr><td><b>{h_p}</b></td><td style='font-size:11px;'>선발 투수명</td><td><b>{a_p}</b></td></tr><tr><td>{h_era:.2f}</td><td style='font-size:11px;'>예상 방어율</td><td>{a_era:.2f}</td></tr><tr><td>{h_ops:.3f}</td><td style='font-size:11px;'>예상 팀 OPS</td><td>{a_ops:.3f}</td></tr></table></div>"
 
                             st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html="", detail_html=detail_html, radar_html=""))
+                        except Exception: pass
                 except Exception: pass
-                    
         if len(st.session_state['analyzed_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
         progress_bar.progress(1.0); status_text.text("✅ 종합 야구 자동 스캔 및 AI 분석 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
 
