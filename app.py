@@ -8,6 +8,7 @@ import random
 import math
 import json
 
+# 💡 구글 AI 모듈 방탄 처리
 try:
     import google.generativeai as genai
     HAS_GENAI = True
@@ -24,7 +25,57 @@ if HAS_GENAI and GEMINI_API_KEY:
     try: genai.configure(api_key=GEMINI_API_KEY)
     except Exception: pass
 
-custom_css = """<style>@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');.stApp { background-color: #0e1117; }.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px; display: flex; flex-direction: column; height: 550px; }.card-box p { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; }.card-top { flex-shrink: 0; }.card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin: 10px 0; }.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }.match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 5px; }.team-side { display: flex; align-items: center; width: 38%; gap: 6px; }.home-side { justify-content: flex-end; text-align: right; }.away-side { justify-content: flex-start; text-align: left; }.team-name { font-size: 13.5px; font-weight: bold; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85px; }.score-side { width: 24%; font-size: 20px; font-weight: bold; text-align: center; flex-shrink: 0; white-space: nowrap; letter-spacing: 0.5px; }.team-logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; background-color: #fff; border-radius: 50%; padding: 2px; }.referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 5px; }.prob-wrapper { width: 100%; margin-bottom: 10px; }.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; }.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; background-color: #333; }.prob-home { background-color: #4FC3F7; height: 100%; }.prob-draw { background-color: #ff9800; height: 100%; }.prob-away { background-color: #EF5350; height: 100%; }.stat-bg { background-color: #262730; padding: 12px; border-radius: 8px; color: #eeeeee; font-size: 12.5px; line-height: 1.6; text-align: center; border: 1px solid #444; width: 100%; }.predict-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; }.handi-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; } .over-under { font-size: 14.5px; font-weight: bold; margin-bottom: 8px; } .ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; }.table-wrapper { width: 100%; overflow-x: auto; margin-top: 5px; margin-bottom: 15px; }.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; table-layout: fixed; } .detail-table th { background-color: #111; padding: 10px 5px; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }.detail-table td { padding: 8px 5px; border-bottom: 1px solid #2a2a2a; word-wrap: break-word; } .injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }.sim-box { background-color:#0a0a14; padding:15px; border-radius:8px; border:1px solid #4FC3F7; margin-top:10px; }[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }[data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }[data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }[data-testid="stSidebar"] div[role="radiogroup"] label::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 22px; color: #ffffff; background-color: #151515; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: all 0.3s ease; border: 2px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } [data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } [data-testid="stSidebar"] div[role="radiogroup"] label:hover::before { border-color: #666; transform: translateY(-2px); }[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before { border-color: #00E676 !important; color: #00E676 !important; background-color: #151515 !important; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important; }[data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }</style>"""
+# 🎨 UI CSS (글자 이모지 삭제, 디자인 유지)
+custom_css = """
+<style>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+.stApp { background-color: #0e1117; }
+.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px; display: flex; flex-direction: column; height: 550px; }
+.card-box p { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; }
+.card-top { flex-shrink: 0; }
+.card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin: 10px 0; }
+.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }
+.league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
+.match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 5px; }
+.team-side { display: flex; align-items: center; width: 38%; gap: 6px; }
+.home-side { justify-content: flex-end; text-align: right; }
+.away-side { justify-content: flex-start; text-align: left; }
+.team-name { font-size: 13.5px; font-weight: bold; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85px; }
+.score-side { width: 24%; font-size: 20px; font-weight: bold; text-align: center; flex-shrink: 0; white-space: nowrap; letter-spacing: 0.5px; }
+.team-logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; background-color: #fff; border-radius: 50%; padding: 2px; }
+.referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 5px; }
+.prob-wrapper { width: 100%; margin-bottom: 10px; }
+.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; }
+.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; background-color: #333; }
+.prob-home { background-color: #4FC3F7; height: 100%; }
+.prob-draw { background-color: #ff9800; height: 100%; }
+.prob-away { background-color: #EF5350; height: 100%; }
+.stat-bg { background-color: #262730; padding: 12px; border-radius: 8px; color: #eeeeee; font-size: 12.5px; line-height: 1.6; text-align: center; border: 1px solid #444; width: 100%; }
+.predict-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; }
+.handi-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; } 
+.over-under { font-size: 14.5px; font-weight: bold; margin-bottom: 8px; } 
+.ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; white-space: normal; }
+.table-wrapper { width: 100%; overflow-x: auto; margin-top: 5px; margin-bottom: 15px; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #ccc; text-align: center; table-layout: fixed; } 
+.detail-table th { background-color: #111; padding: 10px 5px; border-bottom: 2px solid #555; color: #fff; white-space: nowrap; }
+.detail-table td { padding: 8px 5px; border-bottom: 1px solid #2a2a2a; word-wrap: break-word; } 
+.injury-tag { color: #ff5252; font-size: 11px; background: #331111; padding: 3px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
+.sim-box { background-color:#0a0a14; padding:15px; border-radius:8px; border:1px solid #4FC3F7; margin-top:10px; }
+
+[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] { display: flex !important; flex-direction: row !important; justify-content: space-between !important; gap: 5px !important; width: 100% !important; margin-bottom: 10px; }
+[data-testid="stSidebar"] div[role="radiogroup"] label { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 5px 0 !important; cursor: pointer !important; margin: 0 !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 22px; color: #ffffff; background-color: #151515; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: all 0.3s ease; border: 2px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:hover::before { border-color: #666; transform: translateY(-2px); }
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before { border-color: #00E676 !important; color: #00E676 !important; background-color: #151515 !important; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
+</style>
+"""
 st.markdown(custom_css, unsafe_allow_html=True)
 
 CUSTOM_DICT = {"Arsenal": "아스날", "Aston Villa": "애스턴 빌라", "Newcastle": "뉴캐슬", "Crystal Palace": "크리스탈 팰리스", "Athletics": "애슬레틱스", "Oakland Athletics": "오클랜드", "Oakland": "오클랜드", "Arizona Diamondbacks": "애리조나", "Atlanta Braves": "애틀랜타", "Baltimore Orioles": "볼티모어", "Boston Red Sox": "보스턴", "Chicago Cubs": "시카고 컵스", "Chicago White Sox": "화이트삭스", "Cincinnati Reds": "신시내티", "Cleveland Guardians": "클리블랜드", "Colorado Rockies": "콜로라도", "Detroit Tigers": "디트로이트", "Houston Astros": "휴스턴", "Kansas City Royals": "캔자스시티", "Los Angeles Angels": "LA 에인절스", "Los Angeles Dodgers": "LA 다저스", "Miami Marlins": "마이애미", "Milwaukee Brewers": "밀워키", "Minnesota Twins": "미네소타", "New York Mets": "NY 메츠", "New York Yankees": "NY 양키스", "Philadelphia Phillies": "필라델피아", "Pittsburgh Pirates": "피츠버그", "San Diego Padres": "샌디에이고", "San Francisco Giants": "샌프란시스코", "Seattle Mariners": "시애틀", "St. Louis Cardinals": "세인트루이스", "Tampa Bay Rays": "탬파베이", "Texas Rangers": "텍사스", "Toronto Blue Jays": "토론토", "Washington Nationals": "워싱턴", "LG Twins": "LG 트윈스", "KT Wiz": "KT 위즈", "Samsung Lions": "삼성 라이온즈", "KIA Tigers": "KIA 타이거즈", "Hanwha Eagles": "한화 이글스", "Doosan Bears": "두산 베어스", "NC Dinos": "NC 다이노스", "SSG Landers": "SSG 랜더스", "Lotte Giants": "롯데 자이언츠", "Kiwoom Heroes": "키움 히어로즈", "Yomiuri Giants": "요미우리", "Hanshin Tigers": "한신", "Hiroshima Toyo Carp": "히로시마", "Chunichi Dragons": "주니치", "Yokohama DeNA BayStars": "요코하마", "Tokyo Yakult Swallows": "야쿠르트", "Orix Buffaloes": "오릭스", "Fukuoka SoftBank Hawks": "소프트뱅크", "Hokkaido Nippon-Ham Fighters": "니혼햄", "Chiba Lotte Marines": "지바롯데", "Saitama Seibu Lions": "세이부", "Tohoku Rakuten Golden Eagles": "라쿠텐", "Boston Celtics": "보스턴", "Dallas Mavericks": "댈러스", "Denver Nuggets": "덴버", "Minnesota Timberwolves": "미네소타", "Oklahoma City Thunder": "오클라호마시티", "New York Knicks": "뉴욕 닉스", "Indiana Pacers": "인디애나", "Los Angeles Lakers": "LA 레이커스", "Golden State Warriors": "골든스테이트", "Miami Heat": "마이애미", "Philadelphia 76ers": "필라델피아", "Milwaukee Bucks": "밀워키", "Phoenix Suns": "피닉스", "LA Clippers": "LA 클리퍼스", "Los Angeles Clippers": "LA 클리퍼스", "Sacramento Kings": "새크라멘토", "New Orleans Pelicans": "뉴올리언스", "Cleveland Cavaliers": "클리블랜드", "Orlando Magic": "올랜도", "Chicago Bulls": "시카고", "Atlanta Hawks": "애틀랜타", "Brooklyn Nets": "브루클린", "Toronto Raptors": "토론토", "Washington Wizards": "워싱턴", "Charlotte Hornets": "샬럿", "Detroit Pistons": "디트로이트", "San Antonio Spurs": "샌안토니오", "Houston Rockets": "휴스턴", "Memphis Grizzlies": "멤피스", "Utah Jazz": "유타", "Portland Trail Blazers": "포틀랜드"}
@@ -115,8 +166,7 @@ def load_mlb_all_data():
     try:
         h_splits = requests.get("https://statsapi.mlb.com/api/v1/stats?stats=season&group=hitting&gameType=R&season=2026&playerPool=ALL&limit=1500").json().get('stats', [{}])[0].get('splits') or []
         df_h = pd.DataFrame([{'이름': r['player']['fullName'], '팀': r['team']['name'], '타수': r['stat'].get('atBats', 0), 'OPS': r['stat'].get('ops', '.000')} for r in h_splits])
-        df_h['OPS'] = pd.to_numeric(df_h['OPS'], errors='coerce').fillna(0.0)
-        df_h['타수'] = pd.to_numeric(df_h['타수'], errors='coerce').fillna(0)
+        df_h['OPS'] = pd.to_numeric(df_h['OPS'], errors='coerce').fillna(0.0); df_h['타수'] = pd.to_numeric(df_h['타수'], errors='coerce').fillna(0)
         p_splits = requests.get("https://statsapi.mlb.com/api/v1/stats?stats=season&group=pitching&gameType=R&season=2026&playerPool=ALL&limit=1500").json().get('stats', [{}])[0].get('splits') or []
         df_p = pd.DataFrame([{'이름': r['player']['fullName'], '팀': r['team']['name'], '출장': r['stat'].get('gamesPlayed', 0), '선발': r['stat'].get('gamesStarted', 0), '이닝': r['stat'].get('inningsPitched', '0.0'), '피홈런': r['stat'].get('homeRuns', 0), '볼넷': r['stat'].get('baseOnBalls', 0), '탈삼진': r['stat'].get('strikeOuts', 0)} for r in p_splits])
         df_p['이닝_num'] = pd.to_numeric(df_p['이닝'], errors='coerce').fillna(0.0)
@@ -141,8 +191,7 @@ def load_mlb_team_momentum():
 def load_mlb_live_lineup(game_pk, home_pitcher_id, away_pitcher_id):
     try:
         res = requests.get(f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore").json()
-        h_players = res.get('teams', {}).get('home', {}).get('players') or {}
-        a_players = res.get('teams', {}).get('away', {}).get('players') or {}
+        h_players = res.get('teams', {}).get('home', {}).get('players') or {}; a_players = res.get('teams', {}).get('away', {}).get('players') or {}
         h_p_hand = 'R'; a_p_hand = 'R'
         if home_pitcher_id: h_p_hand = h_players.get(f"ID{home_pitcher_id}", h_players.get(f"ID_{home_pitcher_id}", {})).get('person', {}).get('pitchHand', {}).get('code', 'R')
         if away_pitcher_id: a_p_hand = a_players.get(f"ID{away_pitcher_id}", a_players.get(f"ID_{away_pitcher_id}", {})).get('person', {}).get('pitchHand', {}).get('code', 'R')
@@ -169,15 +218,12 @@ def calculate_platoon_ops(lineup, df_hitters, opp_p_hand, base_team_ops):
 
 def run_mlb_simulation(h_fip, a_fip, h_avg_ip, a_avg_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, park_factor, num_sims=5000):
     h_starter_w = h_avg_ip / 9.0; a_starter_w = a_avg_ip / 9.0
-    h_eff_fip = (h_fip * h_starter_w) + (h_bp_fip * (1 - h_starter_w))
-    a_eff_fip = (a_fip * a_starter_w) + (a_bp_fip * (1 - a_starter_w))
-    h_expected_runs = ((a_eff_fip * (h_ops / 0.720)) + 0.2) * park_factor
-    a_expected_runs = (h_eff_fip * (a_ops / 0.720)) * park_factor
+    h_eff_fip = (h_fip * h_starter_w) + (h_bp_fip * (1 - h_starter_w)); a_eff_fip = (a_fip * a_starter_w) + (a_bp_fip * (1 - a_starter_w))
+    h_expected_runs = ((a_eff_fip * (h_ops / 0.720)) + 0.2) * park_factor; a_expected_runs = (h_eff_fip * (a_ops / 0.720)) * park_factor
     h_wins, a_wins = 0, 0
     h_tie_win_prob = h_expected_runs / (h_expected_runs + a_expected_runs) if (h_expected_runs + a_expected_runs) > 0 else 0.5
     for _ in range(num_sims):
-        h_score = max(0, int(random.gauss(h_expected_runs, 2.3)))
-        a_score = max(0, int(random.gauss(a_expected_runs, 2.3)))
+        h_score = max(0, int(random.gauss(h_expected_runs, 2.3))); a_score = max(0, int(random.gauss(a_expected_runs, 2.3)))
         if h_score == a_score: h_score += 1 if random.random() < h_tie_win_prob else (a_score + 1)
         if h_score > a_score: h_wins += 1
         elif a_score > h_score: a_wins += 1
@@ -190,28 +236,41 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
     try:
         if not h_lineup and not a_lineup: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산 적용)</div>"
         m_len = max(len(h_lineup), len(a_lineup))
-        h_strs = [f"{b['name']} ({b['batSide']})" for b in h_lineup]
-        a_strs = [f"{b['name']} ({b['batSide']})" for b in a_lineup]
+        h_strs = [f"{b['name']} ({b['batSide']})" for b in h_lineup]; a_strs = [f"{b['name']} ({b['batSide']})" for b in a_lineup]
         h_strs += [""] * (m_len - len(h_strs)); a_strs += [""] * (m_len - len(a_strs))
         html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{home_team} (타석)</th><th style='color:#EF5350;'>{away_team} (타석)</th></tr>"
         for i, (h, a) in enumerate(zip(h_strs, a_strs)): html += f"<tr><td>{i+1}. {h}</td><td>{i+1}. {a}</td></tr>"
         return html + "</table></div>"
     except Exception: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산 적용)</div>"
 
-@st.cache_data(ttl=3600)
-def get_kbo_stats_from_gemini(home_team, away_team, date_str):
-    if not HAS_GENAI or not GEMINI_API_KEY: return 4.50, 4.50, 0.750, 0.750 
-    prompt = f"당신은 스포츠 데이터 API입니다. 오늘 날짜는 {date_str} 입니다. 오늘 열리는 KBO 또는 NPB '{home_team}' vs '{away_team}' 경기에 대해 검색하여 아래 정보를 찾아주세요. 1. 홈팀({home_team}) 예상 선발투수 방어율(ERA) 2. 원정팀({away_team}) 예상 선발투수 방어율(ERA) 3. 홈팀({home_team}) 시즌 팀 평균 OPS 4. 원정팀({away_team}) 시즌 팀 평균 OPS. 결과는 반드시 아래와 같은 순수한 JSON 형식으로만 반환해야 합니다. 다른 말이나 마크다운 기호는 절대 붙이지 마세요. {{\"home_era\": 3.45, \"away_era\": 4.12, \"home_ops\": 0.780, \"away_ops\": 0.750}}"
+# 💡 [핵심] 제미나이를 통한 KBO 정밀 분석 함수 (숫자 대신 '분석글'까지 함께 생성)
+@st.cache_data(ttl=3600, show_spinner=False)
+def analyze_kbo_with_gemini(home_team, away_team, date_str):
+    if not HAS_GENAI or not GEMINI_API_KEY:
+        return 50.0, 50.0, 4.5, 4.5, "⚠️ Gemini API 키가 연결되지 않아 기본 시뮬레이션 값만 노출됩니다."
+    prompt = f"""
+    당신은 KBO/NPB 전문 야구 분석가입니다. 오늘 날짜는 {date_str} 입니다.
+    오늘 열리는 '{home_team}' vs '{away_team}' 경기의 최신 선발 투수, 타선 흐름, 불펜진 정보를 기반으로 분석해주세요.
+    반드시 아래와 같은 순수한 JSON 형식으로만 응답해야 합니다. 마크다운(`) 등 다른 글자는 절대 포함하지 마세요.
+    {{
+        "h_win": 55, 
+        "a_win": 45, 
+        "h_score": 5.2, 
+        "a_score": 4.1, 
+        "analysis": "홈팀 선발 OOO의 호투가 예상되며, 원정팀 OOO의 타선 침체가 겹쳐 홈팀의 우세가 예상됩니다."
+    }}
+    """
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         text = response.text.replace("```json", "").replace("```", "").replace("\n", "").strip()
         data = json.loads(text)
-        return float(data.get("home_era", 4.50)), float(data.get("away_era", 4.50)), float(data.get("home_ops", 0.750)), float(data.get("away_ops", 0.750))
-    except Exception: return 4.50, 4.50, 0.750, 0.750 
+        return float(data.get("h_win", 50)), float(data.get("a_win", 50)), float(data.get("h_score", 4.5)), float(data.get("a_score", 4.5)), data.get("analysis", "분석 내용을 불러오는 데 실패했습니다.")
+    except Exception:
+        return 50.0, 50.0, 4.5, 4.5, "🤖 AI 데이터 수집 중 오류가 발생했습니다. (선발 정보 미발표 또는 통신 오류)"
 
 # ==========================================
-# 🏀 농구(NBA) 전용 함수
+# 🏀 농구(NBA) 전용 무료 API 함수 (ESPN)
 # ==========================================
 def load_nba_games_free(date_obj):
     d1 = (date_obj - timedelta(days=1)).strftime("%Y%m%d"); d2 = date_obj.strftime("%Y%m%d")
@@ -285,11 +344,10 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V38.0)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V38.2)</h1>", unsafe_allow_html=True)
 
-sport_options = ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"]
-selected_sport_raw = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
-selected_sport = selected_sport_raw.split(" ")[1]
+sport_options = ["축구", "야구", "농구", "배구"]
+selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
 st.sidebar.markdown("---")
 
 kst_now = datetime.utcnow() + timedelta(hours=9)
@@ -322,9 +380,8 @@ if selected_sport == "축구":
 
     if analyze_button:
         if not selected_leagues: 
-            st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
-            st.stop()
-        st.session_state['analyzed_data_list'] = []
+            st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요."); st.stop()
+        st.session_state['analyzed_data_list'] = []; st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0); status_text = st.empty(); total_leagues = len(selected_leagues)
         
         for idx, league_id in enumerate(selected_leagues):
@@ -449,14 +506,14 @@ if selected_sport == "축구":
                     advice = translate_to_ko(pred.get('predictions', {}).get('advice', '분석 완료'))
                     ref_text = f"👨‍⚖️ 주심: {referee} | 🏟️ {venue}"
 
-                    # 💡 스트림릿 매직 100% 방지 (한 줄로 명시적 변수 할당)
+                    # 💡 스트림릿 매직 100% 방지
                     st.session_state['analyzed_data_list'].append(dict(sport="축구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=p_h, p_d=p_d, p_a=p_a, win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", radar_html=radar_html, lineup_html=get_lineup_table(home_kr, away_kr, lineup_data), detail_html=detail_html))
                 except Exception: pass
         if len(st.session_state['analyzed_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
         progress_bar.progress(1.0); status_text.text("✅ 축구 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
 
 # ==========================================
-# ⚾ 야구 로직
+# ⚾ 야구 로직 (MLB + KBO AI 완전 자동화)
 # ==========================================
 elif selected_sport == "야구":
     analyze_button = st.sidebar.button("🚀 종합 야구 데이터 스캔 시작", use_container_width=True)
@@ -470,7 +527,6 @@ elif selected_sport == "야구":
 
     if analyze_button:
         st.session_state['analyzed_data_list'] = []
-        st.session_state['kbo_npb_data_list'] = []
         st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         
@@ -579,10 +635,10 @@ elif selected_sport == "야구":
                     lineup_html = get_baseball_lineup_html(home_kr, away_kr, h_lineup, a_lineup)
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
-                    # 💡 스트림릿 매직 100% 방지
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
+                except Exception: pass
             except Exception: pass
-            
+
         # 🇰🇷 🇯🇵 2. KBO/NPB API 자동 딥-스캔 및 LLM 시뮬레이션 연동
         if c_kbo or c_npb:
             BASEBALL_URL = "https://v1.baseball.api-sports.io/"
@@ -614,8 +670,7 @@ elif selected_sport == "야구":
                             if is_finished: top_display += "<br><span style='color:#aaa; font-size:12px;'>[경기 종료]</span>"
                             elif is_live: top_display += "<br><span style='color:#ff5252; font-size:12px;'>[진행중]</span>"
                             
-                            h_score = match.get('scores',{}).get('home',{}).get('total')
-                            a_score = match.get('scores',{}).get('away',{}).get('total')
+                            h_score = match.get('scores',{}).get('home',{}).get('total'); a_score = match.get('scores',{}).get('away',{}).get('total')
                             h_score = h_score if h_score is not None else 0; a_score = a_score if a_score is not None else 0
 
                             score_color = "#00E676" if is_finished else ("#ff5252" if is_live else "#888")
@@ -644,7 +699,7 @@ elif selected_sport == "야구":
                                                     break
                             
                             status_text.text(f"🤖 Gemini AI가 {home_kr} vs {away_kr} 스탯 분석 중... ({g_idx+1}/{len(games)})")
-                            h_era, a_era, h_ops, a_ops = get_kbo_stats_from_gemini(home_kr, away_kr, selected_date.strftime('%Y-%m-%d'))
+                            h_era, a_era, h_ops, a_ops, ai_analysis = analyze_kbo_with_gemini(home_kr, away_kr, selected_date.strftime('%Y-%m-%d'))
                             
                             h_win_prob, a_win_prob, h_exp_runs, a_exp_runs = run_mlb_simulation(h_era, a_era, 5.5, 5.5, h_ops, a_ops, 4.5, 4.5, 1.0)
                             
@@ -672,10 +727,10 @@ elif selected_sport == "야구":
                                 else: over_under = ou_text
                             else: over_under = ou_text
                                 
-                            advice = "🤖 Gemini AI가 최신 선발투수 방어율 및 팀 OPS를 수집하여 돌린 자동 시뮬레이션입니다."
+                            advice = f"🤖 Gemini AI: {ai_analysis}"
                             detail_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:40%;'>{home_kr}</th><th style='width:20%; color:#aaa;'>Gemini AI 스탯</th><th style='color:#EF5350; width:40%;'>{away_kr}</th></tr><tr><td>{h_era:.2f}</td><td style='font-size:11px;'>예상 방어율</td><td>{a_era:.2f}</td></tr><tr><td>{h_ops:.3f}</td><td style='font-size:11px;'>예상 팀 OPS</td><td>{a_ops:.3f}</td></tr></table></div>"
 
-                            # 💡 스트림릿 매직 100% 방지
+                            # 💡 스트림릿 매직 방지
                             st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_display, match_display=match_display, stat_box=stat_box, referee="🤖 AI 자동 분석", p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html="", detail_html=detail_html, radar_html=""))
                         except Exception: pass
                 except Exception: pass
