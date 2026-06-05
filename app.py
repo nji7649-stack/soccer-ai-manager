@@ -9,7 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# 🎨 UI CSS (점수 겹침 방지 및 핸디캡/언오버 디자인 통일)
+# 🎨 UI CSS
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -24,7 +24,6 @@ custom_css = """
 .card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 
-/* 💡 점수 겹침 방지를 위해 너비를 38% : 24% : 38% 로 고정 */
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 5px; }
 .team-side { display: flex; align-items: center; width: 38%; gap: 6px; }
 .home-side { justify-content: flex-end; text-align: right; }
@@ -42,7 +41,6 @@ custom_css = """
 .prob-away { background-color: #EF5350; height: 100%; }
 .stat-bg { background-color: #262730; padding: 12px; border-radius: 8px; color: #eeeeee; font-size: 12.5px; line-height: 1.6; text-align: center; border: 1px solid #444; width: 100%; }
 
-/* 💡 승/무/패, 핸디캡, 언오버 텍스트 디자인 완전 통일 */
 .predict-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; }
 .handi-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; } 
 .over-under { font-size: 14.5px; font-weight: bold; margin-bottom: 8px; } 
@@ -125,9 +123,6 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 전력 분석망 데이터</div>" if not is_custom else "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 AI 데이터 연산</div>"
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
-# ==========================================
-# ⚽ 축구 전용 함수
-# ==========================================
 def fetch_custom_team_stats(team_id, season_year):
     try:
         url = "https://v3.football.api-sports.io/fixtures"
@@ -173,9 +168,6 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
         return html
     except: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표</div>"
 
-# ==========================================
-# ⚾ 야구(MLB) 전용 함수
-# ==========================================
 MLB_PARK_FACTORS = {
     'Colorado Rockies': 1.12, 'Cincinnati Reds': 1.08, 'Boston Red Sox': 1.07, 'Texas Rangers': 1.05,
     'Chicago White Sox': 1.04, 'Atlanta Braves': 1.03, 'Los Angeles Dodgers': 1.03, 'Philadelphia Phillies': 1.02,
@@ -289,11 +281,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
         return html + "</table></div>"
     except: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산)</div>"
 
-# ==========================================
-# 🏀 농구(NBA) 전용 무료 API 함수 (ESPN)
-# ==========================================
 def load_nba_games_free(date_obj):
-    # KST 시간 동기화: 전날과 당일의 미국 스케줄을 모두 스캔하여 KST 날짜와 일치하는 경기만 가져옴
     d1 = (date_obj - timedelta(days=1)).strftime("%Y%m%d")
     d2 = date_obj.strftime("%Y%m%d")
     
@@ -316,7 +304,6 @@ def load_nba_games_free(date_obj):
     return valid_events
 
 def get_nba_details_html(event_id, h_team_name, a_team_name):
-    # 지난 경기든 예정 경기든 NBA 공식 박스스코어 요약(summary)에서 라인업과 스탯을 가져옴
     url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event={event_id}"
     try:
         res = requests.get(url, timeout=5).json()
@@ -395,9 +382,6 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
         else: a_wins += 1
     return (h_wins/num_sims)*100, (a_wins/num_sims)*100, exp_h, exp_a
 
-# ==========================================
-# 📺 메인 UI 렌더링 시작
-# ==========================================
 st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V35.0)</h1>", unsafe_allow_html=True)
 
 sport_options = ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"]
@@ -564,7 +548,7 @@ if selected_sport == "축구":
         st.session_state['analyzed_data_list'] = new_data_list
 
 # ==========================================
-# ⚾ 야구 로직 (MLB + KBO/NPB 반자동)
+# ⚾ 야구 로직
 # ==========================================
 elif selected_sport == "야구":
     analyze_button = st.sidebar.button("🚀 종합 야구 데이터 스캔 시작", use_container_width=True)
@@ -577,9 +561,7 @@ elif selected_sport == "야구":
         c_npb = st.checkbox("일본 프로야구 (NPB)", value=False)
 
     if analyze_button:
-        st.session_state['analyzed_data_list'] = []
-        st.session_state['kbo_npb_data_list'] = []
-        st.session_state['nba_upcoming_list'] = []
+        st.session_state['analyzed_data_list'] = []; st.session_state['kbo_npb_data_list'] = []; st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         
         if c_mlb:
@@ -767,7 +749,7 @@ elif selected_sport == "야구":
         progress_bar.progress(1.0); status_text.text("✅ 야구 스캔 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
 
 # ==========================================
-# 🏀 농구 (무료 실시간 ESPN API 연동)
+# 🏀 농구 (ESPN 실시간 연동)
 # ==========================================
 elif selected_sport == "농구":
     analyze_button = st.sidebar.button("🚀 NBA 데이터 딥-스캔 시작", use_container_width=True)
@@ -905,7 +887,7 @@ elif selected_sport == "배구":
     st.sidebar.markdown(f"### 🏐 배구 리그 선택 (준비중)")
 
 # ==========================================
-# 📺 공통 렌더링 엔진 (출력부)
+# 📺 공통 렌더링 엔진 (결과 출력)
 # ==========================================
 if st.session_state.get('analyzed_data_list'):
     cols = st.columns(3)
