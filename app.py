@@ -9,6 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
+# UI CSS
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -90,8 +91,10 @@ def translate_to_ko(text):
     if not text or str(text).strip() in ['', 'N/A']: return '데이터 분석 중'
     for eng, kor in CUSTOM_DICT.items():
         if eng.lower() == str(text).lower() or eng in str(text): return kor
-    try: return GoogleTranslator(source='en', target='ko').translate(str(text).replace('<', '').replace('>', ''))
-    except: return str(text)
+    try:
+        return GoogleTranslator(source='en', target='ko').translate(str(text).replace('<', '').replace('>', ''))
+    except:
+        return str(text)
 
 def safe_num(value):
     if not value or str(value).strip() in ['', 'N/A']: return 0.0
@@ -858,7 +861,6 @@ elif selected_sport == "농구":
                     if actual_home_cover == pred_home_cover: handi_pick += " (적중)"; handi_color = "#B39DDB" 
                     else: handi_pick += " (미적중)"; handi_color = "#F48FB1"
 
-                # 경기 시작 전/후 분기
                 if status == 'pre': 
                     st.session_state['nba_upcoming_list'].append({
                         "event_id": event['id'], "league": top_display, "match_display": match_display,
