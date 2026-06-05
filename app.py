@@ -9,7 +9,7 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-# UI CSS
+# 🎨 UI CSS
 custom_css = """
 <style>
 .stApp { background-color: #0e1117; }
@@ -123,6 +123,9 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     badge = "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 전력 분석망 데이터</div>" if not is_custom else "<div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>⚙️ 자체 AI 데이터 연산</div>"
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
+# ==========================================
+# ⚽ 축구 전용 함수
+# ==========================================
 def fetch_custom_team_stats(team_id, season_year):
     try:
         url = "https://v3.football.api-sports.io/fixtures"
@@ -168,6 +171,9 @@ def get_lineup_table(home_kr, away_kr, lineup_data):
         return html
     except: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표</div>"
 
+# ==========================================
+# ⚾ 야구(MLB) 전용 함수
+# ==========================================
 MLB_PARK_FACTORS = {
     'Colorado Rockies': 1.12, 'Cincinnati Reds': 1.08, 'Boston Red Sox': 1.07, 'Texas Rangers': 1.05,
     'Chicago White Sox': 1.04, 'Atlanta Braves': 1.03, 'Los Angeles Dodgers': 1.03, 'Philadelphia Phillies': 1.02,
@@ -281,6 +287,9 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
         return html + "</table></div>"
     except: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산)</div>"
 
+# ==========================================
+# 🏀 농구(NBA) 전용 무료 API 함수 (ESPN)
+# ==========================================
 def load_nba_games_free(date_obj):
     d1 = (date_obj - timedelta(days=1)).strftime("%Y%m%d")
     d2 = date_obj.strftime("%Y%m%d")
@@ -382,6 +391,9 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
         else: a_wins += 1
     return (h_wins/num_sims)*100, (a_wins/num_sims)*100, exp_h, exp_a
 
+# ==========================================
+# 📺 메인 UI 렌더링 시작
+# ==========================================
 st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V34.1)</h1>", unsafe_allow_html=True)
 
 sport_options = ["⚽ 축구", "⚾ 야구", "🏀 농구", "🏐 배구"]
@@ -548,7 +560,7 @@ if selected_sport == "축구":
         st.session_state['analyzed_data_list'] = new_data_list
 
 # ==========================================
-# ⚾ 야구 로직 (MLB + KBO/NPB 반자동)
+# ⚾ 야구 로직 (MLB 자동 분석 + KBO/NPB 반자동 시뮬레이터 완전 탑재)
 # ==========================================
 elif selected_sport == "야구":
     analyze_button = st.sidebar.button("🚀 종합 야구 데이터 스캔 시작", use_container_width=True)
@@ -559,13 +571,14 @@ elif selected_sport == "야구":
     with st.sidebar.expander("아시아 야구 (수동 시뮬레이터)", expanded=True): 
         c_kbo = st.checkbox("한국 프로야구 (KBO)", value=True)
         c_npb = st.checkbox("일본 프로야구 (NPB)", value=False)
-        
+
     if analyze_button:
         st.session_state['analyzed_data_list'] = []
         st.session_state['kbo_npb_data_list'] = []
         st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0); status_text = st.empty()
         
+        # 🇺🇸 1. MLB 자동 분석 로직 
         if c_mlb:
             status_text.text(f"🔍 MLB 실시간 스탯 불러오는 중...")
             df_h, df_p, team_bp_fip = load_mlb_all_data()
@@ -677,6 +690,7 @@ elif selected_sport == "야구":
                 except Exception as e: pass
             except: pass
 
+        # 🇰🇷 🇯🇵 2. KBO/NPB 배당 스캔 및 반자동 시뮬레이터용 데이터 준비
         if c_kbo or c_npb:
             BASEBALL_URL = "https://v1.baseball.api-sports.io/"
             api_leagues = []
@@ -861,6 +875,7 @@ elif selected_sport == "농구":
                     if actual_home_cover == pred_home_cover: handi_pick += " (적중)"; handi_color = "#B39DDB" 
                     else: handi_pick += " (미적중)"; handi_color = "#F48FB1"
 
+                # 경기 시작 전/후 분기
                 if status == 'pre': 
                     st.session_state['nba_upcoming_list'].append({
                         "event_id": event['id'], "league": top_display, "match_display": match_display,
@@ -889,7 +904,7 @@ elif selected_sport == "배구":
     st.sidebar.markdown(f"### 🏐 배구 리그 선택 (준비중)")
 
 # ==========================================
-# 📺 공통 렌더링 엔진 (출력부)
+# 📺 공통 렌더링 엔진 (결과 출력)
 # ==========================================
 # 1. 자동 분석 (축구, MLB, NBA 지난 경기) 렌더링
 if st.session_state.get('analyzed_data_list'):
