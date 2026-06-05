@@ -658,8 +658,8 @@ if selected_sport == "축구":
                             "control_pick": advice, "over_under": over_under, "handi_pick": "", "radar_html": radar_html, 
                             "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html
                         })
-                    except Exception: 
-                        pass
+            except Exception: 
+                pass
             except Exception: 
                 pass
         
