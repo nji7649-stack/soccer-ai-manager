@@ -835,10 +835,9 @@ elif selected_sport == "야구":
                         "detail_html": detail_html, "radar_html": ""
                     }
                     st.session_state['analyzed_data_list'].append(mlb_item)
-                except Exception: 
-                    pass
             except Exception: 
                 pass
+            
 
         # 🇰🇷 🇯🇵 2. KBO/NPB API 자동 딥-스캔 및 LLM 시뮬레이션 연동
         if c_kbo or c_npb:
