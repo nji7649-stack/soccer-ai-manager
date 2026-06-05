@@ -455,7 +455,7 @@ st.sidebar.markdown("### 📅 검색 날짜 설정 (KST 기준)")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", kst_now.date(), label_visibility="collapsed")
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-if 'analyzed_data_list' not in st.session_state: st.session_state['analyzed_data_list'] = []
+if '' not in st.session_state: st.session_state[''] = []
 if 'nba_upcoming_list' not in st.session_state: st.session_state['nba_upcoming_list'] = []
 
 # ==========================================
@@ -486,7 +486,7 @@ if selected_sport == "축구":
         if not selected_leagues: 
             st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요.")
             st.stop()
-        st.session_state['analyzed_data_list'] = []
+        st.session_state[''] = []
         st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -649,11 +649,11 @@ if selected_sport == "축구":
                         "control_pick": advice, "over_under": over_under, "handi_pick": "", "radar_html": radar_html, 
                         "lineup_html": get_lineup_table(home_kr, away_kr, lineup_data), "detail_html": detail_html
                     }
-                    st.session_state['analyzed_data_list'].append(soccer_item)
+                    st.session_state[''].append(soccer_item)
                 except Exception: 
                     pass
         
-        if len(st.session_state['analyzed_data_list']) == 0: 
+        if len(st.session_state['']) == 0: 
             st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
         progress_bar.progress(1.0)
         status_text.text("✅ 축구 데이터 스캔 완료!")
@@ -675,7 +675,7 @@ elif selected_sport == "야구":
         c_npb = st.checkbox("일본 프로야구 (NPB)", value=False)
 
     if analyze_button:
-        st.session_state['analyzed_data_list'] = []
+        st.session_state[''] = []
         st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -834,7 +834,7 @@ elif selected_sport == "야구":
                         "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": lineup_html, 
                         "detail_html": detail_html, "radar_html": ""
                     }
-                    st.session_state['analyzed_data_list'].append(mlb_item)
+                    st.session_state[''].append(mlb_item)
             except Exception: 
                 pass
             
@@ -980,12 +980,12 @@ elif selected_sport == "야구":
                                 "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": "", 
                                 "detail_html": detail_html, "radar_html": ""
                             }
-                            st.session_state['analyzed_data_list'].append(kbo_item)
+                            st.session_state[''].append(kbo_item)
                         except Exception: 
                             pass
                 except Exception: 
                     pass
-        if len(st.session_state['analyzed_data_list']) == 0: 
+        if len(st.session_state['']) == 0: 
             st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
         progress_bar.progress(1.0)
         status_text.text("✅ 종합 야구 자동 스캔 및 AI 분석 완료!")
@@ -1149,22 +1149,15 @@ elif selected_sport == "농구":
                     st.session_state['nba_upcoming_list'].append(upcoming_item)
                     continue
                 
-                stat_box = f"<span style='color:#aaa;'>Vegas 기준점:</span> <b>{details}</b> (언오버 <b>{ou_line}</b>)<br><span style='color:#aaa;'>AI 기대 득점:</span> {h_kr} <b>{h_exp:.1f}</b> vs <b>{a_exp:.1f}</b> {a_kr}"
-                venue = comp.get('venue', {}).get('fullName', '미정')
-                ref_text = f"🏟️ {venue}"
+                stat_box = f"<span style='color:#aaa;'>Vegas 기준점:</span> <b>{details}</b> (언오버 <b>{ou_line}</b>)<br><span style='color:#aaa;'>AI 기대 득점:</span> {h_exp:.1f} vs {a_exp:.1f}"
                 
-                stat_detail, lineup_detail = get_nba_details_html(event['id'], h_kr, a_kr)
-                
-                # 💡 스트림릿 매직 방지
-                nba_analyzed_item = {
-                    "sport": "농구", "league": top_display, "match_display": match_display, "stat_box": stat_box, 
-                    "referee": ref_text, "p_h": f"{h_win_prob:.0f}", "p_d": "0", "p_a": f"{a_win_prob:.0f}", 
-                    "win_pick": win_pick, "pick_color": pick_color, "ou_color": ou_color, "handi_color": handi_color, 
-                    "control_pick": "Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", "over_under": ou_text, 
-                    "handi_pick": handi_pick, "lineup_html": lineup_detail, "detail_html": stat_detail, "radar_html": ""
+                nba_item = {
+                    "sport": "농구", "league": top_display, "match_display": match_display, 
+                    "stat_box": stat_box, "win_pick": win_pick, "pick_color": pick_color, 
+                    "ou_color": ou_color, "handi_color": handi_color, "over_under": ou_text, "handi_pick": handi_pick
                 }
-                st.session_state['analyzed_data_list'].append(nba_analyzed_item)
-            except Exception: 
+                st.session_state['analyzed_data_list'].append(nba_item)
+            except Exception:
                 pass
         
         progress_bar.progress(1.0)
