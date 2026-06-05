@@ -95,7 +95,7 @@ def safe_num(value):
     except: return 0.0
 
 # ==========================================
-# ⚽ 축구 전용 함수 (생략 없이 유지)
+# ⚽ 축구 전용 함수
 # ==========================================
 def fetch_custom_team_stats(team_id, season_year):
     try:
@@ -206,34 +206,35 @@ def load_mlb_team_momentum():
         return l10_dict
     except: return {}
 
-# 💡 핵심 1: 라인업 API에서 타자의 타격 위치(L/R/S)와 선발투수 투구 위치(L/R) 동시 추출
-def load_mlb_live_lineup(game_pk):
+# 💡 핵심 1: 라인업 데이터 오류 방지 완벽 패치 (ID 추출 방식 변경)
+def load_mlb_live_lineup(game_pk, home_pitcher_id, away_pitcher_id):
     try:
         res = requests.get(f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore").json()
-        h_players = res['teams']['home']['players']
-        a_players = res['teams']['away']['players']
+        h_players = res.get('teams', {}).get('home', {}).get('players', {})
+        a_players = res.get('teams', {}).get('away', {}).get('players', {})
         
-        h_pitchers = res['teams']['home'].get('pitchers', [])
-        a_pitchers = res['teams']['away'].get('pitchers', [])
-        
-        h_p_hand = h_players.get(f"ID_{h_pitchers[0]}", {}).get('person', {}).get('pitchHand', {}).get('code', 'R') if h_pitchers else 'R'
-        a_p_hand = a_players.get(f"ID_{a_pitchers[0]}", {}).get('person', {}).get('pitchHand', {}).get('code', 'R') if a_pitchers else 'R'
+        h_p_hand = 'R'
+        if home_pitcher_id:
+            p_obj = h_players.get(f"ID{home_pitcher_id}", h_players.get(f"ID_{home_pitcher_id}", {}))
+            h_p_hand = p_obj.get('person', {}).get('pitchHand', {}).get('code', 'R')
+            
+        a_p_hand = 'R'
+        if away_pitcher_id:
+            p_obj = a_players.get(f"ID{away_pitcher_id}", a_players.get(f"ID_{away_pitcher_id}", {}))
+            a_p_hand = p_obj.get('person', {}).get('pitchHand', {}).get('code', 'R')
 
         h_lineup, a_lineup = [], []
-        for pid in res['teams']['home'].get('battingOrder', []):
-            p = h_players.get(f"ID_{pid}", {})
-            name = p.get('person', {}).get('fullName', 'Unknown')
-            bat_side = p.get('person', {}).get('batSide', {}).get('code', 'R')
-            h_lineup.append({'name': name, 'batSide': bat_side})
-            
-        for pid in res['teams']['away'].get('battingOrder', []):
-            p = a_players.get(f"ID_{pid}", {})
-            name = p.get('person', {}).get('fullName', 'Unknown')
-            bat_side = p.get('person', {}).get('batSide', {}).get('code', 'R')
-            a_lineup.append({'name': name, 'batSide': bat_side})
-            
+        for pid in res.get('teams', {}).get('home', {}).get('battingOrder', []):
+            p = h_players.get(f"ID{pid}", h_players.get(f"ID_{pid}", {}))
+            if p: h_lineup.append({'name': p.get('person', {}).get('fullName', 'Unknown'), 'batSide': p.get('person', {}).get('batSide', {}).get('code', 'R')})
+                
+        for pid in res.get('teams', {}).get('away', {}).get('battingOrder', []):
+            p = a_players.get(f"ID{pid}", a_players.get(f"ID_{pid}", {}))
+            if p: a_lineup.append({'name': p.get('person', {}).get('fullName', 'Unknown'), 'batSide': p.get('person', {}).get('batSide', {}).get('code', 'R')})
+                
         return h_lineup, a_lineup, h_p_hand, a_p_hand
-    except: return [], [], 'R', 'R'
+    except:
+        return [], [], 'R', 'R'
 
 # 💡 핵심 2: 타자 라인업과 상대 투수 손(L/R)을 바탕으로 플래툰 상성 5% 가감산
 def calculate_platoon_ops(lineup, df_hitters, opp_p_hand, base_team_ops):
@@ -294,7 +295,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V29.3)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V29.4)</h1>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### 🏆 스포츠 종목 선택")
 selected_sport = st.sidebar.radio("종목 선택", ["축구", "야구", "농구", "배구"], horizontal=True, label_visibility="collapsed")
@@ -356,7 +357,8 @@ if selected_sport == "축구":
                     fix_id = str(match['fixture']['id'])
                     home_id = match['teams']['home']['id']; away_id = match['teams']['away']['id']
                     
-                    home_kr = translate_to_ko(match['teams']['home']['name']); away_kr = translate_to_ko(match['teams']['away']['name'])
+                    home_en = match['teams']['home']['name']; away_en = match['teams']['away']['name']
+                    home_kr = translate_to_ko(home_en); away_kr = translate_to_ko(away_en)
                     home_logo = match['teams']['home']['logo']; away_logo = match['teams']['away']['logo']
                     
                     referee = str(match['fixture']['referee']).split(',')[0] if match['fixture']['referee'] else "배정 전"
@@ -434,11 +436,15 @@ if selected_sport == "축구":
 
                     if is_finished:
                         actual = "home" if h_g > a_g else ("away" if a_g > h_g else "draw")
-                        if actual == pred_winner: win_pick += " (적중)"; pick_color = "#ffcc00"
-                        else: win_pick += " (미적중)"; pick_color = "#ff5252"
+                        if actual == pred_winner:
+                            win_pick += " (적중)"
+                            pick_color = "#ffcc00"
+                        else:
+                            win_pick += " (미적중)"
+                            pick_color = "#ff5252"
 
                     odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 무 <b>{odds_d}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "해외 배당 미발매"
-                    stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
+                    stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>최종 산출 파워:</span> {home_kr} <b>{int(h_power)}점</b> vs <b>{int(a_power)}점</b> {away_kr}"
                     
                     under_over_val = pred.get('predictions', {}).get('under_over', '')
                     ou_line = 2.5
@@ -519,6 +525,10 @@ elif selected_sport == "야구":
                 away_team = game['teams']['away']['team']['name']; home_team = game['teams']['home']['team']['name']
                 away_id = game['teams']['away']['team']['id']; home_id = game['teams']['home']['team']['id']
                 away_pitcher = game['teams']['away'].get('probablePitcher', {}).get('fullName', 'TBD'); home_pitcher = game['teams']['home'].get('probablePitcher', {}).get('fullName', 'TBD')
+                
+                home_pitcher_id = game['teams']['home'].get('probablePitcher', {}).get('id')
+                away_pitcher_id = game['teams']['away'].get('probablePitcher', {}).get('id')
+                
                 venue = game.get('venue', {}).get('name', '미정')
                 
                 home_kr = translate_to_ko(home_team)
@@ -555,8 +565,8 @@ elif selected_sport == "야구":
                 h_bp_fip = team_bp_fip.get(home_team, 4.00)
                 a_bp_fip = team_bp_fip.get(away_team, 4.00)
                 
-                # 💡 핵심 1 & 2: 플래툰(좌우 상성) + 최근 기세(L10 30% 혼합) 시스템 적용
-                h_lineup, a_lineup, h_p_hand, a_p_hand = load_mlb_live_lineup(game_pk)
+                # 💡 강제 투수 ID를 통한 플래툰 탐지기 가동
+                h_lineup, a_lineup, h_p_hand, a_p_hand = load_mlb_live_lineup(game_pk, home_pitcher_id, away_pitcher_id)
                 
                 h_base_ops = df_h[(df_h['팀'] == home_team) & (df_h['타수'] > 50)]['OPS'].mean() or 0.720
                 a_base_ops = df_h[(df_h['팀'] == away_team) & (df_h['타수'] > 50)]['OPS'].mean() or 0.720
@@ -587,9 +597,11 @@ elif selected_sport == "야구":
                 if status_type == 'finished':
                     actual = "home" if h_score > a_score else "away"
                     if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob):
-                        win_pick += " (적중)"; pick_color = "#ffcc00"
+                        win_pick += " (적중)"
+                        pick_color = "#ffcc00"
                     else:
-                        win_pick += " (미적중)"; pick_color = "#ff5252"
+                        win_pick += " (미적중)"
+                        pick_color = "#ff5252"
 
                 stat_box = f"<span style='color:#aaa;'>AI 배당:</span> 홈 <b style='color:#ff9800;'>{odds_h:.2f}</b> | 원정 <b style='color:#ff9800;'>{odds_a:.2f}</b><br><span style='color:#aaa;'>기대 득점:</span> {home_kr} <b>{h_exp_runs:.1f}</b> vs <b>{a_exp_runs:.1f}</b> {away_kr}"
                 
@@ -607,10 +619,10 @@ elif selected_sport == "야구":
                         actual_is_over = actual_total > ou_line
                         if actual_is_over == pred_is_over:
                             over_under = f"{ou_text} (적중)"
-                            ou_color = "#FFF59D" # 파스텔 옐로우
+                            ou_color = "#FFF59D" 
                         else:
                             over_under = f"{ou_text} (미적중)"
-                            ou_color = "#F48FB1" # 파스텔 핑크
+                            ou_color = "#F48FB1" 
                     else: over_under = ou_text
                 else: over_under = ou_text
                 
