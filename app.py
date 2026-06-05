@@ -819,8 +819,8 @@ elif selected_sport == "야구":
                         "control_pick": advice, "over_under": over_under, "handi_pick": "", "lineup_html": lineup_html, 
                         "detail_html": detail_html, "radar_html": ""
                     })
-                except Exception: 
-                    pass
+            except Exception: 
+                pass
             except Exception: 
                 pass
 
