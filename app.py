@@ -280,4 +280,4 @@ def fetch_kbo_npb_schedule_via_gemini_rest(date_str, c_kbo, c_npb):
         text = res['candidates'][0]['content']['parts'][0]['text'].strip()
         
         # 💡 스트림릿 JSON 파싱 오류 방지 (마크다운 기호 완벽 걷어내기)
-        if text.startswith("
+    if text.startswith("
