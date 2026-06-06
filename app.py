@@ -257,6 +257,26 @@ st.sidebar.markdown("### 📅 검색 날짜 설정 (KST 기준)")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", kst_now.date(), label_visibility="collapsed")
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
+for idx, l_id in enumerate(target_leagues):
+            status_text.text(f"🔍 API-Basketball 연동 중... 리그 ID: {l_id}")
+            progress_bar.progress((idx) / len(target_leagues))
+            
+            querystring = {"league": str(l_id), "season": season_year, "date": date_str, "timezone": "Asia/Seoul"}
+            res = requests.get(BASKETBALL_URL + "games", headers=HEADERS, params=querystring, timeout=10)
+            
+            # 💡 [핵심] 에러가 나면 화면에 빨간색으로 원인을 띄워줍니다!
+            if res.status_code != 200:
+                st.error(f"🚨 API 서버 통신 에러! 상태 코드: {res.status_code} / 내용: {res.text}")
+                continue
+                
+            data = res.json()
+            if "errors" in data and data["errors"]:
+                st.error(f"🚨 API 권한/요청 에러! 내용: {data['errors']}")
+                continue
+                
+            games = data.get('response') or []
+            
+            # (이하 기존의 for event in games: 로직은 그대로 유지)
 if 'analyzed_data_list' not in st.session_state: st.session_state['analyzed_data_list'] = []
 if 'kbo_npb_data_list' not in st.session_state: st.session_state['kbo_npb_data_list'] = []
 if 'nba_upcoming_list' not in st.session_state: st.session_state['nba_upcoming_list'] = []
