@@ -257,6 +257,9 @@ st.sidebar.markdown("### 📅 검색 날짜 설정 (KST 기준)")
 selected_date = st.sidebar.date_input("날짜를 선택하세요", kst_now.date(), label_visibility="collapsed")
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
+if 'analyzed_data_list' not in st.session_state: st.session_state['analyzed_data_list'] = []
+if 'kbo_npb_data_list' not in st.session_state: st.session_state['kbo_npb_data_list'] = []
+if 'nba_upcoming_list' not in st.session_state: st.session_state['nba_upcoming_list'] = []
 for idx, l_id in enumerate(target_leagues):
             status_text.text(f"🔍 API-Basketball 연동 중... 리그 ID: {l_id}")
             progress_bar.progress((idx) / len(target_leagues))
@@ -277,10 +280,6 @@ for idx, l_id in enumerate(target_leagues):
             games = data.get('response') or []
             
             # (이하 기존의 for event in games: 로직은 그대로 유지)
-if 'analyzed_data_list' not in st.session_state: st.session_state['analyzed_data_list'] = []
-if 'kbo_npb_data_list' not in st.session_state: st.session_state['kbo_npb_data_list'] = []
-if 'nba_upcoming_list' not in st.session_state: st.session_state['nba_upcoming_list'] = []
-
 # ==========================================
 # ⚽ 축구 로직
 # ==========================================
