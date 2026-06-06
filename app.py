@@ -524,7 +524,7 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
-                except Exception: pass
+     
             except Exception: pass
 
         # 🇰🇷 🇯🇵 KBO/NPB 스캐너 (안정적인 수동 시뮬레이터로 원상 복구)
