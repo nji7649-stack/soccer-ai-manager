@@ -12,7 +12,7 @@ st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon
 FOOTBALL_API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
 HEADERS = {'x-apisports-key': FOOTBALL_API_KEY} if FOOTBALL_API_KEY else {}
 
-# 🎨 UI CSS (에러 유발 코드 제거, 가장 안정적인 UI 렌더링)
+# 🎨 UI CSS (에러 유발 코드 및 유령 공백 100% 제거)
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
@@ -230,55 +230,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
         return html + "</table></div>"
     except Exception: return "<div style='text-align:center; padding:15px; color:#888;'>명단 미발표 (시즌 평균 데이터 연산 적용)</div>"
 
-# ==========================================
-# 🏀 농구(NBA) 전용 무료 API 함수 (ESPN)
-# ==========================================
-def load_nba_games_free(date_obj):
-    d1 = (date_obj - timedelta(days=1)).strftime("%Y%m%d"); d2 = date_obj.strftime("%Y%m%d")
-    valid_events = []; seen_ids = set()
-    for d in [d1, d2]:
-        try:
-            res = requests.get(f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={d}", timeout=10).json()
-            for ev in (res.get('events') or []):
-                eid = ev['id']
-                if eid in seen_ids: continue
-                seen_ids.add(eid)
-                utc_time = datetime.strptime(ev['date'], "%Y-%m-%dT%H:%MZ")
-                kst_time = utc_time + timedelta(hours=9)
-                if kst_time.date() == date_obj: valid_events.append((ev, kst_time))
-        except Exception: pass
-    return valid_events
-
-def get_nba_details_html(event_id, h_team_name, a_team_name):
-    try:
-        res = requests.get(f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event={event_id}", timeout=5).json()
-        box_players = res.get('boxscore', {}).get('players') or []
-        h_strs = []; a_strs = []
-        if box_players and len(box_players) >= 2:
-            a_athletes = box_players[0].get('statistics', [{}])[0].get('athletes', [])
-            h_athletes = box_players[1].get('statistics', [{}])[0].get('athletes', [])
-            a_strs = [a['athlete']['shortName'] for a in a_athletes if a.get('starter')]
-            if not a_strs: a_strs = [a['athlete']['shortName'] for a in a_athletes][:5]
-            h_strs = [a['athlete']['shortName'] for a in h_athletes if a.get('starter')]
-            if not h_strs: h_strs = [a['athlete']['shortName'] for a in h_athletes][:5]
-        lineup_html = ""
-        if h_strs and a_strs:
-            m_len = max(len(h_strs), len(a_strs))
-            h_strs += [""] * (m_len - len(h_strs)); a_strs += [""] * (m_len - len(a_strs))
-            lineup_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{h_team_name} (선발/주요)</th><th style='color:#EF5350;'>{a_team_name} (선발/주요)</th></tr>"
-            for h, a in zip(h_strs, a_strs): lineup_html += f"<tr><td>{h}</td><td>{a}</td></tr>"
-            lineup_html += "</table></div>"
-        else: lineup_html = "<div style='text-align:center; padding:10px; color:#888;'>라인업 데이터 수집 대기 중</div>"
-        box_teams = res.get('boxscore', {}).get('teams') or []
-        if box_teams and len(box_teams) >= 2:
-            a_team_stats = box_teams[0].get('statistics') or []
-            h_team_stats = box_teams[1].get('statistics') or []
-            def ext(stats, name): return next((s['displayValue'] for s in stats if s['name'] == name), "-")
-            stat_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{h_team_name}</th><th style='color:#aaa;'>당일 주요 스탯</th><th style='color:#EF5350;'>{a_team_name}</th></tr><tr><td>{ext(h_team_stats, 'fieldGoalsMade-fieldGoalsAttempted')}</td><td>야투율 (FG)</td><td>{ext(a_team_stats, 'fieldGoalsMade-fieldGoalsAttempted')}</td></tr><tr><td>{ext(h_team_stats, 'threePointFieldGoalsMade-threePointFieldGoalsAttempted')}</td><td>3점슛 (3PT)</td><td>{ext(a_team_stats, 'threePointFieldGoalsMade-threePointFieldGoalsAttempted')}</td></tr><tr><td>{ext(h_team_stats, 'rebounds')}</td><td>리바운드</td><td>{ext(a_team_stats, 'rebounds')}</td></tr><tr><td>{ext(h_team_stats, 'turnovers')}</td><td>턴오버</td><td>{ext(a_team_stats, 'turnovers')}</td></tr></table></div>"
-        else: stat_html = "<div style='text-align:center; padding:10px; color:#888;'>상세 지표 수집 중... (경기 시작 전)</div>"
-        return stat_html, lineup_html
-    except Exception: return "<div style='text-align:center; padding:10px; color:#888;'>데이터 연동 중</div>", ""
-
+# 💡 [핵심] 농구 딥-시뮬레이션 로직
 def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_spread_margin, num_sims=5000):
     exp_h = (h_ppg + a_opp_ppg) / 2; exp_a = (a_ppg + h_opp_ppg) / 2
     if ou_line > 100:
@@ -294,7 +246,7 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V46.1 초심회귀판)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V47 통합본)</h1>", unsafe_allow_html=True)
 
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -572,7 +524,7 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
-
+                except Exception: pass
             except Exception: pass
 
         # 🇰🇷 🇯🇵 KBO/NPB 스캐너 (안정적인 수동 시뮬레이터로 원상 복구)
@@ -641,112 +593,109 @@ elif selected_sport == "야구":
         progress_bar.progress(1.0); status_text.text("✅ 종합 야구 자동 스캔 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
 
 # ==========================================
-# 🏀 농구 로직
+# 🏀 농구 로직 (API-Basketball 연동 버전)
 # ==========================================
 elif selected_sport == "농구":
-    analyze_button = st.sidebar.button("🚀 NBA 데이터 딥-스캔 시작", use_container_width=True)
+    analyze_button = st.sidebar.button("🚀 NBA/KBL 데이터 딥-스캔 시작", use_container_width=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🏀 농구 리그 선택")
-    st.sidebar.checkbox("NBA (미국 프로농구)", value=True, disabled=True)
+    c_nba = st.sidebar.checkbox("NBA (미국 프로농구)", value=True)
+    c_kbl = st.sidebar.checkbox("KBL (한국 프로농구)", value=False)
     
     if analyze_button:
-        st.session_state['analyzed_data_list'] = []; st.session_state['nba_upcoming_list'] = []
-        progress_bar = st.progress(0); status_text = st.empty()
-        status_text.text("🔍 ESPN 실시간 NBA 데이터망 접속 중...")
-        events = load_nba_games_free(selected_date)
+        st.session_state['nba_upcoming_list'] = []
+        progress_bar = st.progress(0)
+        status_text = st.empty()
         
-        if not events: st.info(f"해당 날짜({selected_date})에 한국시간 기준으로 진행되는 NBA 경기가 없습니다.")
+        target_leagues = []
+        if c_nba: target_leagues.append(12)  # API-Basketball NBA ID
+        if c_kbl: target_leagues.append(10)  # API-Basketball KBL ID
         
-        for idx, (event, kst_time) in enumerate(events):
+        if not target_leagues:
+            st.warning("최소 1개 이상의 농구 리그를 선택해주세요.")
+            st.stop()
+            
+        date_str = selected_date.strftime('%Y-%m-%d')
+        season_year = str(selected_date.year if selected_date.month > 8 else selected_date.year - 1)
+        BASKETBALL_URL = "https://v1.basketball.api-sports.io/"
+        
+        for idx, l_id in enumerate(target_leagues):
+            status_text.text(f"🔍 API-Basketball 연동 중... 리그 ID: {l_id}")
+            progress_bar.progress((idx) / len(target_leagues))
+            
             try:
-                status_text.text(f"🔍 NBA 몬테카를로 시뮬레이션 가동 중... ({idx+1}/{len(events)})")
-                progress_bar.progress((idx+1)/max(len(events),1))
+                querystring = {"league": str(l_id), "season": season_year, "date": date_str, "timezone": "Asia/Seoul"}
+                res = requests.get(BASKETBALL_URL + "games", headers=HEADERS, params=querystring, timeout=10).json()
+                games = res.get('response') or []
                 
-                comp = event.get('competitions', [{}])[0]; teams = comp.get('competitors', [])
-                if len(teams) < 2: continue
-                h_team = next((t for t in teams if t.get('homeAway') == 'home'), teams[0]); a_team = next((t for t in teams if t.get('homeAway') == 'away'), teams[1])
-                
-                h_name_en = h_team.get('team', {}).get('displayName', 'Unknown'); a_name_en = a_team.get('team', {}).get('displayName', 'Unknown')
-                h_kr = translate_to_ko(h_name_en); a_kr = translate_to_ko(a_name_en)
-                h_score = int(h_team.get('score', 0)); a_score = int(a_team.get('score', 0))
-                h_logo = h_team.get('team', {}).get('logo', ''); a_logo = a_team.get('team', {}).get('logo', '')
-                
-                status_obj = event.get('status', {}).get('type', {})
-                status = status_obj.get('state', 'pre'); status_detail = status_obj.get('detail', '')
-                match_time = kst_time.strftime("%H:%M")
-                
-                if status == 'post': top_display = f"NBA ({match_time}) <br><span style='color:#aaa; font-size:12px;'>[경기 종료]</span>"; score_color = "#00E676"; score_text = f"{h_score}:{a_score}"
-                elif status == 'in': top_display = f"NBA ({match_time}) <br><span style='color:#ff5252; font-size:12px;'>[{status_detail}]</span>"; score_color = "#ff5252"; score_text = f"{h_score}:{a_score}"
-                else: top_display = f"NBA ({match_time})"; score_color = "#888888"; score_text = "VS"
-                    
-                match_display = f"<div class='match-box'><div class='team-side home-side'><div class='team-name' title='{h_kr}'>{h_kr}</div><img src='{h_logo}' class='team-logo'></div><div class='score-side' style='color:{score_color};'>{score_text}</div><div class='team-side away-side'><img src='{a_logo}' class='team-logo'><div class='team-name' title='{a_kr}'>{a_kr}</div></div></div>"
-                
-                odds_info = comp.get('odds', [{}])[0] if comp.get('odds') else {}
-                details = odds_info.get('details', 'N/A')
-                ou_line = float(odds_info.get('overUnder', 215.5)) if odds_info.get('overUnder') else 215.5
-                
-                home_spread_margin = 0.0
-                if details != 'N/A' and details != 'EVEN':
-                    parts = details.split(' ')
-                    if len(parts) >= 2:
-                        fav_abbr = parts[0]
-                        try: val = float(parts[1].replace('-', ''))
-                        except Exception: val = 0.0
-                        if fav_abbr == h_team.get('team', {}).get('abbreviation', ''): home_spread_margin = -val
-                        else: home_spread_margin = val
+                for event in games:
+                    try:
+                        game_id = str(event['id'])
+                        l_name = event['league']['name']
+                        h_name_en = event['teams']['home']['name']
+                        a_name_en = event['teams']['away']['name']
+                        h_kr = translate_to_ko(h_name_en)
+                        a_kr = translate_to_ko(a_name_en)
+                        
+                        h_score = event['scores']['home']['total']; a_score = event['scores']['away']['total']
+                        h_score = h_score if h_score is not None else 0; a_score = a_score if a_score is not None else 0
+                        
+                        h_logo = event['teams']['home']['logo']; a_logo = event['teams']['away']['logo']
+                        status_short = event['status']['short']
+                        is_finished = status_short in ['FT', 'AOT']
+                        is_live = status_short not in ['NS', 'FT', 'AOT', 'CANC', 'PST']
+                        
+                        try:
+                            utc_time = datetime.utcfromtimestamp(event['timestamp']); match_time = (utc_time + timedelta(hours=9)).strftime("%H:%M")
+                        except Exception: match_time = "미정"
+                        
+                        if is_finished: top_display = f"{l_name} ({match_time}) <br><span style='color:#aaa; font-size:12px;'>[경기 종료]</span>"; score_color = "#00E676"; score_text = f"{h_score}:{a_score}"
+                        elif is_live: top_display = f"{l_name} ({match_time}) <br><span style='color:#ff5252; font-size:12px;'>[진행중]</span>"; score_color = "#ff5252"; score_text = f"{h_score}:{a_score}"
+                        else: top_display = f"{l_name} ({match_time})"; score_color = "#888888"; score_text = "VS"
                             
-                h_summary = h_team.get('records', [{}])[0].get('summary', '0-0') if h_team.get('records') else '0-0'
-                a_summary = a_team.get('records', [{}])[0].get('summary', '0-0') if a_team.get('records') else '0-0'
-                try: h_pct = int(h_summary.split('-')[0]) / max((int(h_summary.split('-')[0]) + int(h_summary.split('-')[1])), 1)
-                except Exception: h_pct = 0.5
-                try: a_pct = int(a_summary.split('-')[0]) / max((int(a_summary.split('-')[0]) + int(a_summary.split('-')[1])), 1)
-                except Exception: a_pct = 0.5
-                
-                h_win_prob, a_win_prob, h_exp, a_exp = run_nba_simulation(h_pct, a_pct, ou_line, home_spread_margin)
-                
-                if h_win_prob > a_win_prob + 10: win_pick, pick_color = f"🟢 {h_kr} 일반 승", "#00E676"
-                elif a_win_prob > h_win_prob + 10: win_pick, pick_color = f"🔵 {a_kr} 일반 승", "#4FC3F7"
-                else: win_pick, pick_color = "🟡 팽팽한 접전", "#ff9800"
-                
-                if status == 'post':
-                    actual = "home" if h_score > a_score else "away"
-                    if (actual == "home" and h_win_prob > a_win_prob) or (actual == "away" and a_win_prob > h_win_prob): win_pick += " (적중)"; pick_color = "#ffcc00"
-                    else: win_pick += " (미적중)"; pick_color = "#ff5252"
-                    
-                total_exp = h_exp + a_exp
-                if total_exp > ou_line + 1.5: ou_text = f"🔥 총 {total_exp:.1f}점 (기준 {ou_line} 오버)"
-                elif total_exp < ou_line - 1.5: ou_text = f"❄️ 총 {total_exp:.1f}점 (기준 {ou_line} 언더)"
-                else: ou_text = f"⚠️ 총 {total_exp:.1f}점 (기준 {ou_line} 패스)"
-                
-                ai_margin = h_exp - a_exp
-                if (ai_margin + home_spread_margin) > 0: handi_pick = f"💪 {h_kr} 핸디캡 극복 (예상마진: {abs(ai_margin):.1f}점 차)"
-                else: handi_pick = f"🛡️ {a_kr} 핸디캡 방어(플핸) (예상마진: {abs(ai_margin):.1f}점 차)"
-
-                ou_color = "#ddd"; handi_color = "#ddd"
-                
-                if status == 'post':
-                    actual_total = h_score + a_score
-                    is_over = actual_total > ou_line; pred_over = total_exp > ou_line
-                    if abs(total_exp - ou_line) > 1.5:
-                        if is_over == pred_over: ou_text += " (적중)"; ou_color = "#FFF59D" 
-                        else: ou_text += " (미적중)"; ou_color = "#F48FB1" 
-                    
-                    actual_margin = h_score - a_score
-                    actual_home_cover = (actual_margin + home_spread_margin) > 0; pred_home_cover = (ai_margin + home_spread_margin) > 0
-                    if actual_home_cover == pred_home_cover: handi_pick += " (적중)"; handi_color = "#B39DDB" 
-                    else: handi_pick += " (미적중)"; handi_color = "#F48FB1"
-
-                if status == 'pre':
-                    st.session_state['nba_upcoming_list'].append(dict(event_id=event['id'], league=top_display, match_display=match_display, home_kr=h_kr, away_kr=a_kr, ou_line=ou_line, spread=home_spread_margin, details=details))
-                    continue
-                
-                stat_box = f"<span style='color:#aaa;'>Vegas 기준점:</span> <b>{details}</b> (언오버 <b>{ou_line}</b>)<br><span style='color:#aaa;'>AI 기대 득점:</span> {h_kr} <b>{h_exp:.1f}</b> vs <b>{a_exp:.1f}</b> {a_kr}"
-                venue = comp.get('venue', {}).get('fullName', '미정'); ref_text = f"🏟️ {venue}"
-                stat_detail, lineup_detail = get_nba_details_html(event['id'], h_kr, a_kr)
-                
-                st.session_state['analyzed_data_list'].append(dict(sport="농구", league=top_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color=handi_color, control_pick="Vegas 배당률 및 승률 모멘텀 시뮬레이션 적용", over_under=ou_text, handi_pick=handi_pick, lineup_html=lineup_detail, detail_html=stat_detail, radar_html=""))
+                        match_display = f"<div class='match-box'><div class='team-side home-side'><div class='team-name' title='{h_kr}'>{h_kr}</div><img src='{h_logo}' class='team-logo'></div><div class='score-side' style='color:{score_color};'>{score_text}</div><div class='team-side away-side'><img src='{a_logo}' class='team-logo'><div class='team-name' title='{a_kr}'>{a_kr}</div></div></div>"
+                        
+                        # API-Basketball 배당률 수집
+                        odds_res = requests.get(BASKETBALL_URL + "odds", headers=HEADERS, params={"game": game_id}).json()
+                        odds_h = odds_a = 0.0; ou_line = 215.5; spread = 0.0
+                        
+                        if odds_res and odds_res.get('response') and isinstance(odds_res['response'], list):
+                            bookies = odds_res['response'][0].get('bookmakers') or []
+                            if bookies:
+                                bets = bookies[0].get('bets') or []
+                                for b in bets:
+                                    if b.get('name') == 'Home/Away':
+                                        for v in (b.get('values') or []):
+                                            if str(v.get('value')) == 'Home': odds_h = float(v.get('odd', 0))
+                                            elif str(v.get('value')) == 'Away': odds_a = float(v.get('odd', 0))
+                                    elif b.get('name') == 'Over/Under':
+                                        for v in (b.get('values') or []):
+                                            if 'Over' in str(v.get('value')):
+                                                try: ou_line = float(str(v['value']).replace('Over', '').strip())
+                                                except Exception: pass
+                                                break
+                                    elif b.get('name') == 'Asian Handicap':
+                                        for v in (b.get('values') or []):
+                                            if 'Home' in str(v.get('value')):
+                                                try: spread = float(str(v['value']).replace('Home', '').strip())
+                                                except Exception: pass
+                                                break
+                        
+                        st.session_state['nba_upcoming_list'].append({
+                            'event_id': game_id, 'league': top_display, 'match_display': match_display, 
+                            'home_kr': h_kr, 'away_kr': a_kr, 'ou_line': ou_line, 'spread': spread, 
+                            'odds_h': odds_h, 'odds_a': odds_a
+                        })
+                    except Exception: pass
             except Exception: pass
-        progress_bar.progress(1.0); status_text.text("✅ NBA 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
+            
+        progress_bar.progress(1.0)
+        status_text.text("✅ 농구 데이터 스캔 완료!")
+        time.sleep(1)
+        status_text.empty()
+        progress_bar.empty()
+        if not st.session_state['nba_upcoming_list']:
+            st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
 
 # ==========================================
 # 🏐 배구 (추후 업데이트)
@@ -766,7 +715,7 @@ if st.session_state.get('analyzed_data_list'):
             if data['sport'] in ["야구", "농구"]: prob_bar = f"<div class='prob-wrapper'><div class='prob-text'><span>홈 승 {data['p_h']}%</span><span>원정 승 {data['p_a']}%</span></div><div class='prob-container'><div class='prob-home' style='width: {data['p_h']}%;'></div><div class='prob-away' style='width: {data['p_a']}%;'></div></div></div>"
             else: prob_bar = f"<div class='prob-wrapper'><div class='prob-text'><span>승 {data['p_h']}%</span><span>무 {data['p_d']}%</span><span>패 {data['p_a']}%</span></div><div class='prob-container'><div class='prob-home' style='width: {data['p_h']}%;'></div><div class='prob-draw' style='width: {data['p_d']}%;'></div><div class='prob-away' style='width: {data['p_a']}%;'></div></div></div>"
             handi_html = f"<div class='handi-txt' style='color: {data.get('handi_color', '#ddd')}'>{data.get('handi_pick', '')}</div>" if data.get('handi_pick') else ""
-            html_str = f"""<div style='height: 100%;'><div class='card-box'><div class='card-top'><div class='league-txt'>{data['league']}</div>{data['match_display']}<div class='referee-txt'>{data['referee']}</div></div><div class='card-mid'>{prob_bar}<div class='stat-bg'>{data['stat_box']}</div></div><div class='card-bot'><div class='predict-txt' style='color: {data['pick_color']};'>🎯 {data['win_pick']}</div>{handi_html}<div class='over-under' style='color: {data['ou_color']};'>{data['over_under']}</div><div class='ai-advice'>⚔️ {data['control_pick']}</div></div></div></div>"""
+            html_str = f"<div style='height: 100%;'><div class='card-box'><div class='card-top'><div class='league-txt'>{data['league']}</div>{data['match_display']}<div class='referee-txt'>{data['referee']}</div></div><div class='card-mid'>{prob_bar}<div class='stat-bg'>{data['stat_box']}</div></div><div class='card-bot'><div class='predict-txt' style='color: {data['pick_color']};'>🎯 {data['win_pick']}</div>{handi_html}<div class='over-under' style='color: {data['ou_color']};'>{data['over_under']}</div><div class='ai-advice'>⚔️ {data['control_pick']}</div></div></div></div>"
             st.markdown(html_str, unsafe_allow_html=True)
             with st.expander("🔍 상세 지표 & 명단 확인"):
                 if data.get('detail_html'): st.markdown(data['detail_html'], unsafe_allow_html=True)
@@ -774,7 +723,7 @@ if st.session_state.get('analyzed_data_list'):
                 if data.get('lineup_html'): st.markdown(data['lineup_html'], unsafe_allow_html=True)
             st.write("")
 
-# 💡 [핵심] KBO 수동 시뮬레이터 완벽 복구
+# 💡 KBO 수동 시뮬레이터 렌더링
 if selected_sport == "야구" and st.session_state.get('kbo_npb_data_list'):
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['kbo_npb_data_list']):
@@ -801,15 +750,16 @@ if selected_sport == "야구" and st.session_state.get('kbo_npb_data_list'):
                 elif total_exp < data['ou_line'] - 0.5: ou_text = f"❄️ 총 {total_exp:.1f}점 (기준 {data['ou_line']} 언더)"
                 else: ou_text = f"⚠️ 총 {total_exp:.1f}점 (기준 {data['ou_line']} 패스)"
                 
-                st.markdown(f"""<div class='sim-box'><div style='text-align:center; font-weight:bold; font-size:14px; margin-bottom:8px;'>📊 실시간 역산 결과</div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;'><span style='color:#ccc;'>승리 확률:</span><span><b style='color:#4FC3F7;'>{h_win_sim:.1f}%</b> vs <b style='color:#EF5350;'>{a_win_sim:.1f}%</b></span></div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;'><span style='color:#ccc;'>기대 득점:</span><span><b style='color:#4FC3F7;'>{h_exp_sim:.1f}점</b> vs <b style='color:#EF5350;'>{a_exp_sim:.1f}점</b></span></div><div style='border-top:1px dashed #555; padding-top:10px; text-align:center;'><div style='color:{pick_color}; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{win_pick}</div><div style='color:#FFF59D; font-weight:bold; font-size:12px;'>{ou_text}</div></div></div>""", unsafe_allow_html=True)
+                st.markdown(f"<div class='sim-box'><div style='text-align:center; font-weight:bold; font-size:14px; margin-bottom:8px;'>📊 실시간 역산 결과</div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;'><span style='color:#ccc;'>승리 확률:</span><span><b style='color:#4FC3F7;'>{h_win_sim:.1f}%</b> vs <b style='color:#EF5350;'>{a_win_sim:.1f}%</b></span></div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;'><span style='color:#ccc;'>기대 득점:</span><span><b style='color:#4FC3F7;'>{h_exp_sim:.1f}점</b> vs <b style='color:#EF5350;'>{a_exp_sim:.1f}점</b></span></div><div style='border-top:1px dashed #555; padding-top:10px; text-align:center;'><div style='color:{pick_color}; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{win_pick}</div><div style='color:#FFF59D; font-weight:bold; font-size:12px;'>{ou_text}</div></div></div>", unsafe_allow_html=True)
             st.write("")
 
+# 💡 농구 시뮬레이터 렌더링 (API-Basketball)
 if selected_sport == "농구" and st.session_state.get('nba_upcoming_list'):
     cols = st.columns(3)
     for idx, data in enumerate(st.session_state['nba_upcoming_list']):
         with cols[idx % 3]:
             st.markdown(f"<div class='card-box' style='height: auto; margin-bottom: 10px;'><div class='card-top'><div class='league-txt'>{data['league']}</div>{data['match_display']}</div></div>", unsafe_allow_html=True)
-            with st.expander("🔬 NBA 정밀 시뮬레이터 가동", expanded=True):
+            with st.expander("🔬 농구 정밀 시뮬레이터 가동", expanded=True):
                 st.markdown("<div style='font-size:11.5px; color:#aaa; margin-bottom:10px;'>※ 오늘 양 팀의 <b>평균 득점(PPG)</b>과 <b>평균 실점(OPP)</b>을 입력 시 5,000회 시뮬레이션이 돌아갑니다.</div>", unsafe_allow_html=True)
                 h_name = data['home_kr']; a_name = data['away_kr']
                 c1, c2 = st.columns(2)
@@ -818,6 +768,7 @@ if selected_sport == "농구" and st.session_state.get('nba_upcoming_list'):
                 c3, c4 = st.columns(2)
                 h_opp = c3.number_input(f"[{h_name}] 평균 실점", min_value=0.0, max_value=150.0, value=112.5, step=0.5, key=f"h_opp_{data['event_id']}")
                 a_opp = c4.number_input(f"[{a_name}] 평균 실점", min_value=0.0, max_value=150.0, value=112.5, step=0.5, key=f"a_opp_{data['event_id']}")
+                
                 h_win_sim, a_win_sim, h_exp_sim, a_exp_sim = run_nba_deep_simulation(h_ppg, h_opp, a_ppg, a_opp, data['ou_line'], data['spread'])
                 
                 if h_win_sim > a_win_sim + 10: win_pick = f"🟢 {h_name} 승리 유력"; pick_color = "#00E676"
@@ -833,5 +784,7 @@ if selected_sport == "농구" and st.session_state.get('nba_upcoming_list'):
                 if (ai_margin + data['spread']) > 0: handi_pick = f"💪 {h_name} 핸디캡 극복 (예상마진: {abs(ai_margin):.1f}점 차)"
                 else: handi_pick = f"🛡️ {a_name} 핸디캡 방어(플핸) (예상마진: {abs(ai_margin):.1f}점 차)"
                 
-                st.markdown(f"""<div class='sim-box'><div style='text-align:center; font-weight:bold; font-size:14px; margin-bottom:8px;'>📊 실시간 역산 결과</div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;'><span style='color:#ccc;'>승리 확률:</span><span><b style='color:#4FC3F7;'>{h_win_sim:.1f}%</b> vs <b style='color:#EF5350;'>{a_win_sim:.1f}%</b></span></div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;'><span style='color:#ccc;'>기대 득점:</span><span><b style='color:#4FC3F7;'>{h_exp_sim:.1f}점</b> vs <b style='color:#EF5350;'>{a_exp_sim:.1f}점</b></span></div><div style='border-top:1px dashed #555; padding-top:10px; text-align:center;'><div style='color:{pick_color}; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{win_pick}</div><div style='color:#B39DDB; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{handi_pick}</div><div style='color:#FFF59D; font-size:13.5px;'>{ou_text}</div></div></div>""", unsafe_allow_html=True)
+                odds_text = f"<span style='color:#aaa;'>해외 배당:</span> 홈 <b>{data['odds_h']}</b> | 원정 <b>{data['odds_a']}</b>" if data['odds_h'] > 0 else "<span style='color:#aaa;'>해외 배당:</span> 발매 전"
+                
+                st.markdown(f"<div class='sim-box'><div style='text-align:center; font-size:12px; margin-bottom:8px;'>{odds_text} (기준점: {data['ou_line']} / 핸디: {data['spread']})</div><div style='text-align:center; font-weight:bold; font-size:14px; margin-bottom:8px;'>📊 실시간 역산 결과</div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;'><span style='color:#ccc;'>승리 확률:</span><span><b style='color:#4FC3F7;'>{h_win_sim:.1f}%</b> vs <b style='color:#EF5350;'>{a_win_sim:.1f}%</b></span></div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;'><span style='color:#ccc;'>기대 득점:</span><span><b style='color:#4FC3F7;'>{h_exp_sim:.1f}점</b> vs <b style='color:#EF5350;'>{a_exp_sim:.1f}점</b></span></div><div style='border-top:1px dashed #555; padding-top:10px; text-align:center;'><div style='color:{pick_color}; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{win_pick}</div><div style='color:#B39DDB; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{handi_pick}</div><div style='color:#FFF59D; font-size:13.5px; font-weight:bold;'>{ou_text}</div></div></div>", unsafe_allow_html=True)
             st.write("")
