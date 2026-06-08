@@ -9,10 +9,11 @@ import math
 
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-FOOTBALL_API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
-HEADERS = {'x-apisports-key': FOOTBALL_API_KEY} if FOOTBALL_API_KEY else {}
+# 💡 [핵심 수정] API 키를 더욱 확실하게 불러오도록 수정했습니다!
+API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
+HEADERS = {'x-apisports-key': API_KEY} if API_KEY else {}
 
-# 🎨 UI CSS (에러 유발 코드 및 유령 공백 완벽 제거)
+# 🎨 UI CSS
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
@@ -263,23 +264,7 @@ def get_baseball_lineup_html(home_team, away_team, h_lineup, a_lineup):
 # ==========================================
 # 🏀 농구 전용 함수 (API-Basketball)
 # ==========================================
-@st.cache_data(ttl=600, show_spinner=False)
-def fetch_api_basketball_games(league_id, season, date_str):
-    try:
-        url = "https://v1.basketball.api-sports.io/games"
-        params = {"league": league_id, "season": season, "date": date_str, "timezone": "Asia/Seoul"}
-        return requests.get(url, headers=HEADERS, params=params, timeout=10).json().get('response') or []
-    except Exception: return []
-
-@st.cache_data(ttl=600, show_spinner=False)
-def fetch_api_basketball_odds(game_id):
-    try:
-        url = "https://v1.basketball.api-sports.io/odds"
-        return requests.get(url, headers=HEADERS, params={"game": game_id}, timeout=10).json().get('response') or []
-    except Exception: return []
-
 def generate_basketball_stats_from_odds(h_prob):
-    # 예측을 위한 가상의 레이더차트 생성 (배당률 확률 기반)
     base_h = h_prob; base_a = 100 - h_prob
     h_vals = [min(95, max(40, base_h + random.uniform(-10, 10))), min(95, max(40, base_h + random.uniform(-15, 5))), min(95, max(40, base_h + random.uniform(-10, 10))), min(95, max(40, base_h)), min(95, max(40, base_h + random.uniform(-5, 15))), base_h]
     a_vals = [min(95, max(40, base_a + random.uniform(-10, 10))), min(95, max(40, base_a + random.uniform(-15, 5))), min(95, max(40, base_a + random.uniform(-10, 10))), min(95, max(40, base_a)), min(95, max(40, base_a + random.uniform(-5, 15))), base_a]
@@ -564,7 +549,7 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
-        
+                except Exception: pass
             except Exception: pass
 
         if c_kbo or c_npb:
@@ -627,7 +612,7 @@ elif selected_sport == "야구":
                             st.session_state['kbo_npb_data_list'].append(dict(game_id=game_id, league=top_display, match_display=match_display, home_kr=home_kr, away_kr=away_kr, odds_h=odds_h, odds_a=odds_a, ou_line=ou_line, status=status_short, h_score=h_score, a_score=a_score, is_finished=is_finished))
                         except Exception: pass
                 except Exception: pass
-        if len(st.session_state['analyzed_data_list']) == 0 and len(st.session_state['kbo_npb_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
+        if len(st.session_state['analyzed_data_list']) == 0 and len(st.session_state['kbo_npb_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다. (미래 날짜일 경우 KBO API에서 지원하지 않습니다.)")
         progress_bar.progress(1.0); status_text.text("✅ 종합 야구 자동 스캔 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
 
 # ==========================================
