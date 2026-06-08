@@ -86,7 +86,7 @@ CUSTOM_DICT = {
     "Philadelphia 76ers": "필라델피아", "Milwaukee Bucks": "밀워키", "Phoenix Suns": "피닉스", "LA Clippers": "LA 클리퍼스", 
     "Los Angeles Clippers": "LA 클리퍼스", "Sacramento Kings": "새크라멘토", "New Orleans Pelicans": "뉴올리언스", "Cleveland Cavaliers": "클리블랜드", 
     "Orlando Magic": "올랜도", "Chicago Bulls": "시카고 불스", "Atlanta Hawks": "애틀랜타 호크스", "Brooklyn Nets": "브루클린", "Toronto Raptors": "토론토 랩터스", 
-    "Washington Wizards": "워싱턴 위저즈", "Charlotte Hornets": "샬럿 호니츠", "Detroit Pistons": "디트로이트 피스톤스", "San Antonio Spurs": "샌안토니오", 
+    "Washington Wizards": "워싱턴 위저즈", "Charlotte Hornets": "샬럿 호니츠", "Detroit Pistons": "디트로이트 피스톤스", "San Antonio Spurs": "샌안토니오 스퍼스", 
     "Houston Rockets": "휴스턴 로키츠", "Memphis Grizzlies": "멤피스", "Utah Jazz": "유타 재즈", "Portland Trail Blazers": "포틀랜드"
 }
 
@@ -285,7 +285,7 @@ def run_nba_deep_simulation(h_ppg, h_opp_ppg, a_ppg, a_opp_ppg, ou_line, home_sp
 # ==========================================
 # 📺 메인 UI 렌더링 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V47 최종통합본)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 AI 종합 스포츠 분석실 PRO MAX (V48 마스터버전)</h1>", unsafe_allow_html=True)
 
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -562,7 +562,7 @@ elif selected_sport == "야구":
                     ref_text = f"🏟️ {venue} | 投: {home_pitcher}({h_p_hand}) vs {away_pitcher}({a_p_hand})"
 
                     st.session_state['analyzed_data_list'].append(dict(sport="야구", league=top_league_display, match_display=match_display, stat_box=stat_box, referee=ref_text, p_h=f"{h_win_prob:.0f}", p_d="0", p_a=f"{a_win_prob:.0f}", win_pick=win_pick, pick_color=pick_color, ou_color=ou_color, handi_color="#ddd", control_pick=advice, over_under=over_under, handi_pick="", lineup_html=lineup_html, detail_html=detail_html, radar_html=""))
-
+                except Exception: pass
             except Exception: pass
 
         if c_kbo or c_npb:
@@ -571,6 +571,7 @@ elif selected_sport == "야구":
             if c_kbo: api_leagues.append(("5", "KBO"))
             if c_npb: api_leagues.append(("2", "NPB")) 
             
+            # 💡 [핵심 해결] 야구도 데이터 에러를 방지하기 위해 현재 연도를 자동으로 받아옵니다.
             current_season = str(datetime.now().year)
             for idx, (l_id, l_name) in enumerate(api_leagues):
                 status_text.text(f"🔍 {l_name} 경기 일정 스캔 중... (API 활용)")
@@ -626,7 +627,7 @@ elif selected_sport == "야구":
                             st.session_state['kbo_npb_data_list'].append(dict(game_id=game_id, league=top_display, match_display=match_display, home_kr=home_kr, away_kr=away_kr, odds_h=odds_h, odds_a=odds_a, ou_line=ou_line, status=status_short, h_score=h_score, a_score=a_score, is_finished=is_finished))
                         except Exception: pass
                 except Exception: pass
-        if len(st.session_state['analyzed_data_list']) == 0 and len(st.session_state['kbo_npb_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
+        if len(st.session_state['analyzed_data_list']) == 0 and len(st.session_state['kbo_npb_data_list']) == 0: st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다. (미래 날짜일 경우 KBO API에서 지원하지 않습니다.)")
         progress_bar.progress(1.0); status_text.text("✅ 종합 야구 자동 스캔 완료!"); time.sleep(1.5); status_text.empty(); progress_bar.empty()
 
 # ==========================================
@@ -641,6 +642,10 @@ elif selected_sport == "농구":
     c_wkbl = st.sidebar.checkbox("WKBL (한국 여자프로농구)", value=False)
     
     if analyze_button:
+        if not HEADERS.get('x-apisports-key'):
+            st.error("🚨 API 키가 설정되지 않았습니다. 사이트 관리자에게 문의하세요.")
+            st.stop()
+            
         st.session_state['analyzed_data_list'] = []
         st.session_state['nba_upcoming_list'] = []
         progress_bar = st.progress(0)
@@ -658,31 +663,36 @@ elif selected_sport == "농구":
         date_str = selected_date.strftime('%Y-%m-%d')
         BASKETBALL_URL = "https://v1.basketball.api-sports.io/"
         
-        # 💡 [핵심 해결 부분] 미래 날짜(2026년)를 검색할 때 2025로 변환되어 API가 에러를 뱉는 것을 막기 위해, 
-        # API-Basketball이 안정적으로 지원하는 최대 시즌인 "2023"(또는 2024)으로 자동 제한(Clamp)합니다.
-        calc_season = selected_date.year if selected_date.month > 8 else selected_date.year - 1
-        season_year = str(min(calc_season, 2023)) 
+        status_text.text(f"🔍 해당 날짜({date_str})의 전 세계 농구 경기 스캔 중...")
+        progress_bar.progress(0.3)
         
-        for idx, l_id in enumerate(target_leagues):
-            status_text.text(f"🔍 농구 데이터 스캔 중... (API-Basketball 연동)")
-            progress_bar.progress((idx) / len(target_leagues))
+        try:
+            # 💡 [핵심 해결 포인트] 시즌 파라미터를 아예 빼버리고, 날짜(Date)로만 검색해서 에러 원천 차단!
+            querystring = {"date": date_str, "timezone": "Asia/Seoul"}
+            res = requests.get(BASKETBALL_URL + "games", headers=HEADERS, params=querystring, timeout=10)
             
-            try:
-                querystring = {"league": l_id, "season": season_year, "date": date_str, "timezone": "Asia/Seoul"}
-                res = requests.get(BASKETBALL_URL + "games", headers=HEADERS, params=querystring, timeout=10)
+            if res.status_code == 403:
+                st.error("🚨 403 에러 발생! 방금 농구 구독을 누르셨다면 API 서버에 권한이 퍼지기까지 약 3~5분이 소요됩니다. 5분 뒤 다시 시도해주세요.")
+                st.stop()
+            elif res.status_code != 200:
+                st.error(f"🚨 API 서버 통신 에러! 상태 코드: {res.status_code}")
+                st.stop()
                 
-                if res.status_code != 200:
-                    st.error(f"🚨 API 서버 통신 에러! 상태 코드: {res.status_code} / 시즌: {season_year}")
-                    continue
-                    
-                data = res.json()
-                if "errors" in data and data["errors"]:
-                    st.error(f"🚨 API 권한/요청 에러! 내용: {data['errors']}")
-                    continue
-                    
-                games = data.get('response') or []
+            data = res.json()
+            if "errors" in data and data["errors"]:
+                st.error(f"🚨 API 권한/요청 에러! 내용: {data['errors']}")
+                st.stop()
                 
-                for event in games:
+            all_games = data.get('response') or []
+            
+            # 파이썬에서 우리가 선택한 리그(NBA, KBL 등)만 필터링합니다.
+            filtered_games = [g for g in all_games if str(g.get('league', {}).get('id')) in target_leagues]
+            progress_bar.progress(0.6)
+            
+            if not filtered_games:
+                st.info(f"선택하신 리그에 {selected_date} 일자로 배정된 경기가 없습니다.")
+            else:
+                for idx, event in enumerate(filtered_games):
                     try:
                         game_id = str(event['id'])
                         l_name = event['league']['name']
@@ -752,10 +762,11 @@ elif selected_sport == "농구":
                         odds_text = f"<b style='color:#ff9800;'>{odds_h}</b> | 원정 <b style='color:#ff9800;'>{odds_a}</b>" if odds_h > 0 else "발매 전"
                         stat_box = f"<span style='color:#aaa;'>해외 배당:</span> 홈 {odds_text}<br><span style='color:#aaa;'>제공 기준점:</span> <b>{ou_line}</b> (핸디캡: <b>{spread}</b>)"
                         
-                        if status_short == 'pre':
+                        if status_short == 'NS': # Not Started (시작 전 경기)
                             st.session_state['nba_upcoming_list'].append({
                                 'event_id': game_id, 'league': top_display, 'match_display': match_display, 
-                                'home_kr': h_kr, 'away_kr': a_kr, 'ou_line': ou_line, 'spread': spread
+                                'home_kr': h_kr, 'away_kr': a_kr, 'ou_line': ou_line, 'spread': spread,
+                                'odds_h': odds_h, 'odds_a': odds_a
                             })
                             continue
 
@@ -770,7 +781,8 @@ elif selected_sport == "농구":
                             'radar_html': radar_html, 'lineup_html': "", 'detail_html': ""
                         })
                     except Exception: pass
-            except Exception: pass
+        except Exception as e:
+            st.error(f"알 수 없는 오류 발생: {e}")
             
         progress_bar.progress(1.0)
         status_text.text("✅ 농구 데이터 스캔 완료!")
@@ -867,5 +879,7 @@ if selected_sport == "농구" and st.session_state.get('nba_upcoming_list'):
                 if (ai_margin + data['spread']) > 0: handi_pick = f"💪 {h_name} 핸디캡 극복 (예상마진: {abs(ai_margin):.1f}점 차)"
                 else: handi_pick = f"🛡️ {a_name} 핸디캡 방어(플핸) (예상마진: {abs(ai_margin):.1f}점 차)"
                 
-                st.markdown(f"<div class='sim-box'><div style='text-align:center; font-weight:bold; font-size:14px; margin-bottom:8px;'>📊 실시간 역산 결과</div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;'><span style='color:#ccc;'>승리 확률:</span><span><b style='color:#4FC3F7;'>{h_win_sim:.1f}%</b> vs <b style='color:#EF5350;'>{a_win_sim:.1f}%</b></span></div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;'><span style='color:#ccc;'>기대 득점:</span><span><b style='color:#4FC3F7;'>{h_exp_sim:.1f}점</b> vs <b style='color:#EF5350;'>{a_exp_sim:.1f}점</b></span></div><div style='border-top:1px dashed #555; padding-top:10px; text-align:center;'><div style='color:{pick_color}; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{win_pick}</div><div style='color:#B39DDB; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{handi_pick}</div><div style='color:#FFF59D; font-size:13.5px;'>{ou_text}</div></div></div>", unsafe_allow_html=True)
+                odds_text = f"<span style='color:#aaa;'>해외 배당:</span> 홈 <b>{data['odds_h']}</b> | 원정 <b>{data['odds_a']}</b>" if data['odds_h'] > 0 else "<span style='color:#aaa;'>해외 배당:</span> 발매 전"
+                
+                st.markdown(f"<div class='sim-box'><div style='text-align:center; font-size:12px; margin-bottom:8px;'>{odds_text} (기준점: {data['ou_line']} / 핸디: {data['spread']})</div><div style='text-align:center; font-weight:bold; font-size:14px; margin-bottom:8px;'>📊 실시간 역산 결과</div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;'><span style='color:#ccc;'>승리 확률:</span><span><b style='color:#4FC3F7;'>{h_win_sim:.1f}%</b> vs <b style='color:#EF5350;'>{a_win_sim:.1f}%</b></span></div><div style='display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px;'><span style='color:#ccc;'>기대 득점:</span><span><b style='color:#4FC3F7;'>{h_exp_sim:.1f}점</b> vs <b style='color:#EF5350;'>{a_exp_sim:.1f}점</b></span></div><div style='border-top:1px dashed #555; padding-top:10px; text-align:center;'><div style='color:{pick_color}; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{win_pick}</div><div style='color:#B39DDB; font-weight:bold; font-size:13.5px; margin-bottom:5px;'>{handi_pick}</div><div style='color:#FFF59D; font-size:13.5px; font-weight:bold;'>{ou_text}</div></div></div>", unsafe_allow_html=True)
             st.write("")
