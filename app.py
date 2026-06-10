@@ -349,7 +349,7 @@ elif selected_sport == "야구":
                         'control_pick': "좌/우 타석 기반 매치업 완성", 'over_under': "기준점 8.5 패스", 'handi_pick': "", 
                         'radar_html': "", 'lineup_html': lineup_html, 'detail_html': ""
                     })
-                except Exception: pass
+    
             except Exception: pass
 
         if c_kbo:
