@@ -12,7 +12,7 @@ import random
 # ==========================================
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-try:
+
     
 except:
     FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
