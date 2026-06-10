@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from deep_translator import GoogleTranslator
 import time
 import math
-import random  # 💡 [버그 픽스] 누락되어 에러를 유발했던 random 라이브러리 완벽 주입!
+import random
 
 # ==========================================
 # 1. 페이지 및 API 초기 설정
@@ -16,7 +16,7 @@ FOOTBALL_API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
 HEADERS = {'x-apisports-key': FOOTBALL_API_KEY} if FOOTBALL_API_KEY else {}
 
 # ==========================================
-# 2. 🎨 UI CSS (레이아웃 및 표 디자인 최적화)
+# 2. 🎨 UI CSS (레이아웃 깨짐 완벽 방어)
 # ==========================================
 custom_css = """
 <style>
@@ -40,12 +40,13 @@ custom_css = """
 [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
 
-/* 컴팩트 카드 디자인 (높이 자동화) */
-.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px; display: flex; flex-direction: column; height: auto; }
+/* 💡 카드 전체 레이아웃 */
+.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 25px; display: flex; flex-direction: column; height: auto; box-sizing: border-box; overflow: hidden; }
 .card-box p { margin: 0 !important; padding: 0 !important; line-height: 1.5 !important; }
-.card-top { flex-shrink: 0; }
-.card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; margin: 10px 0; }
-.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 15px; text-align: center; }
+.card-top { flex-shrink: 0; width: 100%; }
+.card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; margin: 10px 0; width: 100%; }
+.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 15px; text-align: center; width: 100%; }
+
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 15px; }
 .team-side { display: flex; align-items: center; width: 38%; gap: 6px; }
@@ -56,21 +57,22 @@ custom_css = """
 .team-logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; background-color: #fff; border-radius: 50%; padding: 2px; }
 .referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 5px; }
 
-/* 확률 바 */
-.prob-wrapper { width: 100%; margin-bottom: 10px; }
-.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; }
-.prob-container { display: flex; width: 100%; height: 8px; border-radius: 4px; overflow: hidden; background-color: #333; }
+/* 💡 확률 바 튀어나옴 해결 (box-sizing 및 width 강제 조정) */
+.prob-wrapper { width: 100%; margin-bottom: 15px; box-sizing: border-box; }
+.prob-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 6px; width: 100%; padding: 0 2px; box-sizing: border-box; }
+.prob-container { display: flex; width: 100%; height: 10px; border-radius: 5px; overflow: hidden; background-color: #333; box-sizing: border-box; }
 .prob-home { background-color: #4FC3F7; height: 100%; }
 .prob-draw { background-color: #ff9800; height: 100%; }
 .prob-away { background-color: #EF5350; height: 100%; }
 
-/* 하단 텍스트 및 상세 표 */
+/* 하단 텍스트 및 상세 표 테이블 */
 .predict-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 5px; }
 .ai-advice { font-size: 11.5px; color: #aaa; font-weight: normal; margin-top:5px; margin-bottom:10px; }
-.table-wrapper { width: 100%; margin-top: 5px; margin-bottom: 10px; }
-.detail-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #ccc; text-align: center; background-color: #1a1a1a; border-radius: 6px; overflow: hidden; } 
-.detail-table th { background-color: #222; padding: 6px 2px; border-bottom: 1px solid #444; color: #fff; white-space: nowrap; }
-.detail-table td { padding: 6px 2px; border-bottom: 1px solid #2a2a2a; } 
+.table-wrapper { width: 100%; margin-top: 5px; margin-bottom: 10px; overflow-x: hidden; }
+/* 💡 테이블 찌그러짐 방지 (table-layout: fixed) */
+.detail-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; color: #ccc; text-align: center; background-color: #1a1a1a; border-radius: 6px; overflow: hidden; } 
+.detail-table th { background-color: #222; padding: 6px 2px; border-bottom: 1px solid #444; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detail-table td { padding: 6px 2px; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } 
 
 .standings-header { font-size: 16px; font-weight: bold; color: #00E676; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
 </style>
@@ -102,7 +104,7 @@ def safe_num(value):
     except Exception: return 0.0
 
 # ==========================================
-# 4. 육각형 레이더 차트 함수
+# 4. 육각형 레이더 차트 (축구 전용)
 # ==========================================
 def create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom=False):
     labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '종합전력']
@@ -144,10 +146,11 @@ def fetch_api_football_standings(league_id, season):
     except Exception: return []
 
 # ==========================================
-# 6. 축구 심층 지표 표 및 라인업 생성 엔진
+# 6. 축구 세부 스탯 표 & 라인업 생성기
 # ==========================================
 def generate_football_advanced_stats_html(h_team, a_team, h_prob, is_finished, h_score=0, a_score=0):
     a_prob = 100 - h_prob
+    
     h_pos = round(h_prob); a_pos = 100 - h_pos
     h_pass = round(75.0 + (h_prob - 50) * 0.3, 1); a_pass = round(75.0 + (a_prob - 50) * 0.3, 1)
     h_sot = round(3.5 + (h_prob - 50) * 0.1, 1); a_sot = round(3.5 + (a_prob - 50) * 0.1, 1)
@@ -169,9 +172,9 @@ def generate_football_advanced_stats_html(h_team, a_team, h_prob, is_finished, h
         <div style='text-align:center; font-size:11.5px; color:#00E676; margin-bottom:5px; font-weight:bold;'>{title_text}</div>
         <table class='detail-table'>
             <tr style='background-color:#111;'>
-                <th style='color:#4FC3F7; width:35%;'>{h_team}</th>
-                <th style='color:#aaa; width:30%;'>비교 스탯</th>
-                <th style='color:#EF5350; width:35%;'>{a_team}</th>
+                <th style='color:#4FC3F7; width:33%;'>{h_team}</th>
+                <th style='color:#aaa; width:34%;'>비교 스탯</th>
+                <th style='color:#EF5350; width:33%;'>{a_team}</th>
             </tr>
             <tr><td style='color:#fff; font-weight:bold;'>{h_gf}</td><td style='color:#aaa;'>평균 득점력</td><td style='color:#fff; font-weight:bold;'>{a_gf}</td></tr>
             <tr><td>{margin_text_h}</td><td style='color:#aaa;'>골득실 마진</td><td>{margin_text_a}</td></tr>
@@ -187,8 +190,8 @@ def get_lineup_table(home_kr, away_kr):
     return f"""
     <div class='table-wrapper'>
         <table class='detail-table'>
-            <tr><th style='color:#4FC3F7;'>{home_kr} (예상 선발)</th><th style='color:#EF5350;'>{away_kr} (예상 선발)</th></tr>
-            <tr><td>공식 라인업 조회 대기</td><td>공식 라인업 조회 대기</td></tr>
+            <tr><th style='color:#4FC3F7; width:50%;'>{home_kr} (예상 선발)</th><th style='color:#EF5350; width:50%;'>{away_kr} (예상 선발)</th></tr>
+            <tr><td style='color:#888;'>경기 1시간 전 발표 대기</td><td style='color:#888;'>경기 1시간 전 발표 대기</td></tr>
         </table>
     </div>
     """
@@ -196,7 +199,8 @@ def get_lineup_table(home_kr, away_kr):
 # ==========================================
 # 7. 메인 UI (사이드바 및 날짜 설정)
 # ==========================================
-# 💡 복구 완료: 감독님 전용 원본 아이콘 라디오 버튼 UI
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V63 픽스판)</h1>", unsafe_allow_html=True)
+
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
 st.sidebar.markdown("---")
@@ -205,12 +209,11 @@ kst_now = datetime.utcnow() + timedelta(hours=9)
 selected_date = st.sidebar.date_input("📅 검색 날짜 설정 (KST 기준)", kst_now.date())
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-# 데이터를 저장할 세션 초기화
 if 'soccer_cards_data' not in st.session_state: st.session_state['soccer_cards_data'] = []
 if 'soccer_standings_tabs' not in st.session_state: st.session_state['soccer_standings_tabs'] = {}
 
 # ==========================================
-# ⚽ 8. 축구 단독 완성형 엔진 가동
+# ⚽ 8. 축구 단독 스캔 로직
 # ==========================================
 if selected_sport == "축구":
     analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
@@ -254,10 +257,11 @@ if selected_sport == "축구":
         
         progress_bar = st.progress(0)
         status_text = st.empty()
+        limit_hit = False
         
-        # 1️⃣ 루프를 돌며 리그별 데이터 가공 후 세션에 분리 저장
         for idx, league_id in enumerate(selected_leagues):
-            status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 전력 스캔 중... ({idx+1}/{len(selected_leagues)})")
+            if limit_hit: break
+            status_text.text(f"🔍 {LEAGUE_MAP[league_id]} 데이터 스캔 중... ({idx+1}/{len(selected_leagues)})")
             progress_bar.progress((idx) / len(selected_leagues))
             
             if league_id in SPRING_TO_AUTUMN_LEAGUES: calc_season = str(selected_date.year)
@@ -305,7 +309,9 @@ if selected_sport == "축구":
                         
                         if is_finished: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{h_score}:{a_score}"
                         elif status in ['1H', 'HT', '2H', 'ET']: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{h_score}:{a_score}"
-                        else: top_display = f"{LEAGUE_MAP[league_id]} ({match_time})"; s_color="#888"; s_txt="VS"
+                        else: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time})"; s_color="#888"; s_txt="VS"
+
+                        match_disp = f"<div class='match-box'><div class='team-side home-side'><div class='team-name'>{home_kr}</div><img src='{h_logo}' class='team-logo'></div><div class='score-side' style='color:{s_color};'>{s_txt}</div><div class='team-side away-side'><img src='{a_logo}' class='team-logo'><div class='team-name'>{away_kr}</div></div></div>"
 
                         # 영리한 순위 기반 승률 산출 법
                         if standings_dict and home_id in standings_dict and away_id in standings_dict:
@@ -327,22 +333,32 @@ if selected_sport == "축구":
                         lineup_html = get_lineup_table(home_kr, away_kr)
 
                         st.session_state['soccer_cards_data'].append({
-                            'league_title': LEAGUE_MAP[league_id], 'top_text': f"{LEAGUE_MAP[league_id]} ({match_time})" if not is_finished and status not in ['1H', 'HT', '2H', 'ET'] else top_txt,
+                            'league_title': LEAGUE_MAP[league_id], 'top_text': top_txt,
                             'home_kr': home_kr, 'away_kr': away_kr, 'h_logo': h_logo, 'a_logo': a_logo, 's_color': s_color, 's_txt': s_txt,
                             'p_h': h_prob, 'p_a': a_prob, 'win_pick': win_pick, 'pick_color': pick_color,
                             'advanced_html': adv_html, 'radar_html': radar_html, 'lineup_html': lineup_html, 'referee': "경기장: " + str(match['fixture']['venue']['name'])
                         })
                     except Exception: pass
+            elif matches == "LIMIT":
+                st.error("🚨 API 무료 호출 한도 초과! 잠시 후 다시 시도해 주세요.")
+                limit_hit = True; break
+                
             time.sleep(0.4)
             
-        progress_bar.progress(1.0); status_text.text("✅ 축구 예측 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
+        progress_bar.progress(1.0)
+        if not limit_hit: status_text.text("✅ 축구 데이터 스캔 완료!")
+        time.sleep(1)
+        status_text.empty()
+        progress_bar.empty()
 
-# 💡 상단에 경기 분석 카드가 먼저 나오도록 출력부 우선 순위 배치
+# ==========================================
+# 📺 9. 공통 렌더링 엔진 (분석 카드 출력부)
+# ==========================================
 if st.session_state.get('soccer_cards_data'):
     cols = st.columns(3)
     for idx, card in enumerate(st.session_state['soccer_cards_data']):
         with cols[idx % 3]:
-            # 카드 중앙에 advanced_html(평균득실마진 등)이 컴팩트하게 노출
+            # 💡 [픽스 완료] 확률 바 튀어나옴 방지 (box-sizing 적용된 css 클래스 호출)
             html_str = f"""
             <div class='card-box'>
                 <div class='card-top'><div class='league-txt'>{card['top_text']}</div><div class='match-box'><div class='team-side home-side'><div class='team-name'>{card['home_kr']}</div><img src='{card['h_logo']}' class='team-logo'></div><div class='score-side' style='color:{card['s_color']};'>{card['s_txt']}</div><div class='team-side away-side'><img src='{card['a_logo']}' class='team-logo'><div class='team-name'>{card['away_kr']}</div></div></div><div class='referee-txt'>{card['referee']}</div></div>
@@ -365,26 +381,26 @@ if st.session_state.get('soccer_cards_data'):
             """
             st.markdown(html_str, unsafe_allow_html=True)
             
-            # 💡 [핵심 복구 성공] 토글하면 출력되는 육각형 그래프와 라인업 표!
+            # 💡 육각형 차트와 선발 명단 아코디언 메뉴 정상 출력!
             with st.expander("🔍 육각형 지표 & 선발 명단 확인"):
                 if card.get('radar_html'): st.markdown(card['radar_html'], unsafe_allow_html=True)
                 if card.get('lineup_html'): st.markdown(card['lineup_html'], unsafe_allow_html=True)
             st.write("")
 
-# 💡 [기획안 완벽 반영] 순위표/조편성은 경기 카드 아래쪽으로 내리고 대형 리그 탭(Tab) UI로 가로 압축!
+# ==========================================
+# 📊 10. 순위표 및 조편성 (하단으로 이동 완료)
+# ==========================================
 if st.session_state.get('soccer_standings_tabs'):
     st.markdown("<br><hr>", unsafe_allow_html=True)
     
-    # 선택된 대형 리그별 탭 생성
     league_tab_names = list(st.session_state['soccer_standings_tabs'].keys())
     league_tabs = st.tabs(league_tab_names)
     
     for l_tab, l_name in zip(league_tabs, league_tab_names):
         with l_tab:
-            st.markdown(f"<div class='standings-header'>📊 {l_name} 실시간 정밀 순위 리포트</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='standings-header'>📊 {l_name} 실시간 순위 리포트</div>", unsafe_allow_html=True)
             tables_data = st.session_state['soccer_standings_tabs'][l_name]
             
-            # 월드컵이나 챔스처럼 조별리그가 여러 개인 경우 내부에서 서브 조별 탭 생성
             if len(tables_data) > 1:
                 sub_tab_names = [table['group_name'] for table in tables_data]
                 sub_tabs = st.tabs(sub_tab_names)
@@ -392,7 +408,6 @@ if st.session_state.get('soccer_standings_tabs'):
                     with s_tab:
                         st.dataframe(table['dataframe'], use_container_width=True)
             else:
-                # 일반 통합 단일 리그 순위표
                 st.dataframe(tables_data[0]['dataframe'], use_container_width=True)
 
 # 타 종목 안내
