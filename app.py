@@ -8,19 +8,19 @@ import math
 import random
 
 # ==========================================
-# 1. 페이지 및 API 초기 설정 (안전한 키 할당)
+# 1. 페이지 설정 및 API 키 (💡 감독님 집중 포인트!)
 # ==========================================
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-try:
-    FOOTBALL_API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
-except:
-    FOOTBALL_API_KEY = ""
-# 만약 직접 키를 넣고 싶으시면 위 줄을 지우고 아래처럼 따옴표 안에 키를 넣으세요!
-# FOOTBALL_API_KEY = "내_API_키_입력"
+# 🚨🚨🚨 [매우 중요] 아래 따옴표 안에 발급받으신 API-Football 키를 붙여넣으세요! 🚨🚨🚨
+# 예시: FOOTBALL_API_KEY = "1a2b3c4d5e6f7g8h9i0j..."
+FOOTBALL_API_KEY = "여기에_API_키를_입력하세요"
+# 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+
+HEADERS = {'x-apisports-key': FOOTBALL_API_KEY} if FOOTBALL_API_KEY != "여기에_API_키를_입력하세요" else {}
 
 # ==========================================
-# 2. 🎨 UI CSS (에러 유발 특수공백 완전 멸균)
+# 2. 🎨 UI CSS
 # ==========================================
 custom_css = """
 <style>
@@ -85,7 +85,7 @@ custom_css = """
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 언어 번역 (로컬 딕셔너리로 캐시 충돌 방지)
+# 3. 언어 번역
 # ==========================================
 @st.cache_data(show_spinner=False)
 def translate_to_ko(text):
@@ -108,13 +108,14 @@ def safe_float(value, default=0.0):
     except: return default
 
 # ==========================================
-# 4. 축구 전용 API Fetcher (키를 인자로 받아 캐시 에러 방어)
+# 4. 축구 전용 API Fetcher
 # ==========================================
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_api_football_fixtures(api_key, league_id, season, date_str):
     headers = {'x-apisports-key': api_key} if api_key else {}
     try: 
         res = requests.get("https://v3.football.api-sports.io/fixtures", headers=headers, params={"league": league_id, "season": season, "date": date_str, "timezone": "Asia/Seoul"}, timeout=10)
+        if res.status_code in [401, 403]: return "AUTH_ERROR" # 키 오류 추가
         if res.status_code == 429: return "LIMIT"
         return res.json().get('response') or []
     except: return []
@@ -179,6 +180,16 @@ def build_lineup_html(home_kr, away_kr, lineup_data):
     except:
         return f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7;'>{home_kr}</th><th style='color:#EF5350;'>{away_kr}</th></tr><tr><td style='color:#888;'>발표 대기중</td><td style='color:#888;'>발표 대기중</td></tr></table></div>"
 
+def get_lineup_table(home_kr, away_kr):
+    return f"""
+    <div class='table-wrapper'>
+        <table class='detail-table'>
+            <tr><th style='color:#4FC3F7; width:50%;'>{home_kr} (예상)</th><th style='color:#EF5350; width:50%;'>{away_kr} (예상)</th></tr>
+            <tr><td style='color:#888;'>라인업 발표 대기중</td><td style='color:#888;'>라인업 발표 대기중</td></tr>
+        </table>
+    </div>
+    """
+
 # ==========================================
 # 6. 세이버메트릭스 & 예측 픽 코멘터리 엔진
 # ==========================================
@@ -188,7 +199,7 @@ def generate_football_advanced_stats(h_team, a_team, h_prob, is_finished, h_scor
     h_pass = round(75.0 + (h_prob - 50.0) * 0.3, 1); a_pass = round(75.0 + (a_prob - 50.0) * 0.3, 1)
     h_sot = round(3.5 + (h_prob - 50.0) * 0.1, 1); a_sot = round(3.5 + (a_prob - 50.0) * 0.1, 1)
     
-    # 💡 완벽한 숫자 변환 방어벽 (None 또는 빈칸 처리)
+    # 숫자 안전 변환
     h_gf = float(h_score) if h_score not in [None, ""] else 0.0
     a_gf = float(a_score) if a_score not in [None, ""] else 0.0
     
@@ -221,7 +232,7 @@ def get_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finis
     d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0)
     a_prob = 100.0 - h_prob - d_prob
     
-    # 1. 승패 직관적 픽
+    # 1. 승무패 직관적 픽
     if h_prob > a_prob + 10.0 and h_prob > d_prob: pred_win = "home"; win_txt = f"🟢 {home_kr} 승리 유력"
     elif a_prob > h_prob + 10.0 and a_prob > d_prob: pred_win = "away"; win_txt = f"🔵 {away_kr} 승리 유력"
     else: pred_win = "draw"; win_txt = "🟡 치열한 접전 (무승부 가능성)"
@@ -237,7 +248,7 @@ def get_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finis
     if exp_total > 2.6: pred_ou = "over"; ou_txt = "🔥 화력 집중! 고득점 양상"
     else: pred_ou = "under"; ou_txt = "❄️ 짠물 수비! 저득점 늪"
         
-    # 4. 적중 판별 로직
+    # 4. 적중 판별
     win_badge = handi_badge = ou_badge = ""
     if is_finished:
         try:
@@ -265,9 +276,14 @@ def get_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finis
     return f"{win_txt} {win_badge}", f"{handi_txt} {handi_badge}", f"{ou_txt} {ou_badge}", comment
 
 # ==========================================
-# 7. 메인 UI 구성
+# 7. 메인 UI (사이드바)
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V71 마스터판)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V72 마스터 안전판)</h1>", unsafe_allow_html=True)
+
+# 💡 [필수 체크] API 키가 입력되지 않았다면 여기서 즉시 경고창을 띄우고 앱을 멈춥니다!
+if FOOTBALL_API_KEY == "여기에_API_키를_입력하세요" or not FOOTBALL_API_KEY:
+    st.error("🚨 잠시만요! 앱 코드 18번째 줄에 **API-Football 키(API KEY)**가 입력되지 않았습니다. 키를 따옴표 안에 넣고 저장해주세요!")
+    st.stop()
 
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -281,10 +297,10 @@ if 'soccer_cards_data' not in st.session_state: st.session_state['soccer_cards_d
 if 'soccer_standings_tabs' not in st.session_state: st.session_state['soccer_standings_tabs'] = {}
 
 # ==========================================
-# ⚽ 8. 축구 메인 로직 (딥-스캔 및 안전망 포함)
+# ⚽ 8. 축구 메인 로직
 # ==========================================
 if selected_sport == "축구":
-    analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작 (로딩 주의)", use_container_width=True)
+    analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("### ⚽ 축구 리그 선택")
     
@@ -335,7 +351,7 @@ if selected_sport == "축구":
             
             calc_season = str(selected_date.year) if league_id in SPRING_TO_AUTUMN_LEAGUES else (str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year))
             
-            # 1. 순위표 스캔
+            # 1️⃣ 순위표 수집
             standings_res = fetch_api_football_standings(FOOTBALL_API_KEY, league_id, calc_season)
             standings_dict = {} 
             if standings_res and isinstance(standings_res, list) and len(standings_res) > 0:
@@ -354,15 +370,18 @@ if selected_sport == "축구":
                     except: pass
                 st.session_state['soccer_standings_tabs'][LEAGUE_MAP[league_id]] = league_data_list
             
-            # 2. 일정 스캔
+            # 2️⃣ 일정 수집
             date_str = selected_date.strftime('%Y-%m-%d')
             matches = fetch_api_football_fixtures(FOOTBALL_API_KEY, league_id, calc_season, date_str)
             
-            if matches == "LIMIT":
+            if matches == "AUTH_ERROR":
+                st.error("🚨 API 키가 올바르지 않거나 권한이 없습니다. 코드를 확인해주세요.")
+                limit_hit = True; break
+            elif matches == "LIMIT":
                 st.error("🚨 API 무료 호출 한도 초과! 1분 뒤 리그 수를 줄여 다시 시도해 주세요.")
                 limit_hit = True; break
             
-            # 3. 경기별 딥스캔 렌더링
+            # 3️⃣ 경기별 딥스캔 렌더링
             if matches and isinstance(matches, list):
                 for match in matches:
                     try:
@@ -377,20 +396,17 @@ if selected_sport == "축구":
                         status = match['fixture']['status']['short']
                         is_finished = status in ['FT', 'AET', 'PEN']
                         
-                        # 안전한 스코어 치환
+                        # 안전한 스코어 치환 (None 일 경우 'VS' 표기용으로 원본 유지, 계산용은 변수 분리)
                         goals_h = match.get('goals', {}).get('home')
                         goals_a = match.get('goals', {}).get('away')
                         
-                        h_print = int(goals_h) if goals_h is not None else 0
-                        a_print = int(goals_a) if goals_a is not None else 0
-                        
-                        if is_finished: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{h_print}:{a_print}"
-                        elif status in ['1H', 'HT', '2H', 'ET']: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{h_print}:{a_print}"
+                        if is_finished: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{int(goals_h) if goals_h is not None else 0}:{int(goals_a) if goals_a is not None else 0}"
+                        elif status in ['1H', 'HT', '2H', 'ET']: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{int(goals_h) if goals_h is not None else 0}:{int(goals_a) if goals_a is not None else 0}"
                         else: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time})"; s_color="#888"; s_txt="VS"
 
                         match_disp = f"<div class='match-box'><div class='team-side home-side'><div class='team-name'>{home_kr}</div><img src='{h_logo}' class='team-logo'></div><div class='score-side' style='color:{s_color};'>{s_txt}</div><div class='team-side away-side'><img src='{a_logo}' class='team-logo'><div class='team-name'>{away_kr}</div></div></div>"
 
-                        # 💡 딥-스캔: Predictions 및 Lineups 호출
+                        # 💡 [핵심 복구] Prediction 딥-스캔! 
                         is_custom_radar = True
                         h_prob = 50.0
                         h_vals = [50, 50, 50, 50, 50, 50]; a_vals = [50, 50, 50, 50, 50, 50]
@@ -408,7 +424,7 @@ if selected_sport == "축구":
                                 is_custom_radar = False
                             except: pass
                             
-                        # API 리미트 대비 자체 연산 백업
+                        # API 데이터가 없으면 순위표/해시 기반으로 덮어씀
                         if is_custom_radar:
                             if standings_dict and home_id in standings_dict and away_id in standings_dict:
                                 rank_diff = standings_dict[away_id] - standings_dict[home_id]
@@ -420,7 +436,7 @@ if selected_sport == "축구":
                             h_vals = [random.randint(45,88) for _ in range(6)]
                             a_vals = [random.randint(45,88) for _ in range(6)]
                         
-                        # 라인업 데이터 스캔
+                        # 라인업 스캔
                         lineup_data = fetch_api_football_by_fixture(FOOTBALL_API_KEY, "fixtures/lineups", fix_id)
                         if lineup_data and lineup_data != "LIMIT" and isinstance(lineup_data, list):
                             lineup_html = build_lineup_html(home_kr, away_kr, lineup_data)
@@ -430,7 +446,7 @@ if selected_sport == "축구":
                         d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0)
                         a_prob = 100.0 - h_prob - d_prob
                         
-                        # UI 컴포넌트 조립
+                        # 컴포넌트 생성
                         adv_html, h_gf, a_gf = generate_football_advanced_stats(home_kr, away_kr, h_prob, is_finished, goals_h, goals_a)
                         win_txt, handi_txt, ou_txt, ai_comment = get_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, goals_h, goals_a)
                         radar_html = create_html_radar(h_vals, a_vals, home_kr, away_kr, is_custom_radar)
@@ -447,12 +463,12 @@ if selected_sport == "축구":
                         })
                         match_count += 1
                     except Exception as e:
-                        continue # 특정 경기가 에러나도 전체 화면은 유지
+                        continue 
                         
             time.sleep(0.4)
             
         progress_bar.progress(1.0)
-        if not limit_hit: status_text.text("✅ 축구 데이터 딥-스캔 완료!")
+        if not limit_hit: status_text.text("✅ 축구 데이터 딥-스캔 및 분석 완료!")
         time.sleep(1)
         status_text.empty()
         progress_bar.empty()
@@ -461,7 +477,7 @@ if selected_sport == "축구":
             st.info("선택하신 날짜에 배정된 경기가 없습니다.")
 
 # ==========================================
-# 9. 렌더링 엔진 (카드 및 순위표 출력)
+# 9. 렌더링 엔진 (에러 없는 안전 출력)
 # ==========================================
 if st.session_state.get('soccer_cards_data'):
     cols = st.columns(3)
