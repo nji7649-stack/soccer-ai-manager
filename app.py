@@ -14,7 +14,7 @@ st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon
 
 # 🚨🚨🚨 [매우 중요] 아래 따옴표 안에 발급받으신 API-Football 키를 붙여넣으세요! 🚨🚨🚨
 # 예시: FOOTBALL_API_KEY = "1a2b3c4d5e6f7g8h9i0j..."
-FOOTBALL_API_KEY = "여기에_API_키를_입력하세요"
+FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
 # 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
 
 HEADERS = {'x-apisports-key': FOOTBALL_API_KEY} if FOOTBALL_API_KEY != "여기에_API_키를_입력하세요" else {}
