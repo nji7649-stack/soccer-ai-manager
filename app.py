@@ -8,15 +8,12 @@ import math
 import random
 
 # ==========================================
-# 1. 페이지 및 API 초기 설정
+# 1. 페이지 초기 설정
 # ==========================================
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-FOOTBALL_API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
-HEADERS = {'x-apisports-key': FOOTBALL_API_KEY} if FOOTBALL_API_KEY else {}
-
 # ==========================================
-# 2. 🎨 UI CSS
+# 2. 🎨 UI CSS (레이아웃 최적화 유지)
 # ==========================================
 custom_css = """
 <style>
@@ -30,10 +27,10 @@ custom_css = """
 [data-testid="stSidebar"] div[role="radiogroup"] label::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 22px; color: #ffffff; background-color: #151515; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: all 0.3s ease; border: 2px solid #333; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
 
 /* 각 종목별 폰트어썸 아이콘 매핑 */
-[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } /* 축구 */
-[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } /* 야구 */
-[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } /* 농구 */
-[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } /* 배구 */
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(1)::before { content: "\\f1e3"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(2)::before { content: "\\f433"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(3)::before { content: "\\f434"; } 
+[data-testid="stSidebar"] div[role="radiogroup"] label:nth-child(4)::before { content: "\\f45f"; } 
 
 [data-testid="stSidebar"] div[role="radiogroup"] label:hover::before { border-color: #666; transform: translateY(-2px); }
 [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked)::before { border-color: #00E676 !important; color: #00E676 !important; background-color: #151515 !important; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4) !important; }
@@ -65,7 +62,7 @@ custom_css = """
 .prob-draw { background-color: #ff9800; height: 100%; }
 .prob-away { background-color: #EF5350; height: 100%; }
 
-/* 하단 텍스트 */
+/* 하단 예측 텍스트 */
 .predict-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 6px; }
 .handi-txt { font-size: 13.5px; font-weight: bold; margin-bottom: 6px; color: #B39DDB; } 
 .over-under { font-size: 13.5px; font-weight: bold; margin-bottom: 10px; color: #FFF59D; } 
@@ -78,7 +75,6 @@ custom_css = """
 .detail-table td { padding: 6px 2px; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } 
 
 .standings-header { font-size: 16px; font-weight: bold; color: #00E676; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
-
 .badge-hit { color: #111; background-color: #00E676; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px; display: inline-block; }
 .badge-miss { color: #fff; background-color: #EF5350; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px; display: inline-block; }
 </style>
@@ -86,26 +82,28 @@ custom_css = """
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 언어 번역 딕셔너리
+# 3. 언어 번역 모듈 (💡 딕셔너리를 함수 안으로 이동하여 캐시 충돌 방지)
 # ==========================================
-CUSTOM_DICT = {
-    "Arsenal": "아스날", "Aston Villa": "애스턴 빌라", "Newcastle": "뉴캐슬", "Crystal Palace": "크리스탈 팰리스",
-    "Manchester City": "맨시티", "Manchester United": "맨유", "Liverpool": "리버풀", "Chelsea": "첼시", "Tottenham": "토트넘",
-    "Real Madrid": "레알 마드리드", "Barcelona": "바르셀로나", "Atletico Madrid": "아틀레티코", "Bayern Munich": "바이에른 뮌헨",
-    "Paris Saint Germain": "PSG", "Inter": "인터밀란", "Juventus": "유벤투스", "AC Milan": "AC밀란",
-    "South Korea": "대한민국", "Japan": "일본", "Brazil": "브라질", "Argentina": "아르헨티나", "France": "프랑스", "England": "잉글랜드"
-}
-
 @st.cache_data(show_spinner=False)
 def translate_to_ko(text):
     if not text or str(text).strip() in ['', 'N/A']: return '미정'
-    for eng, kor in CUSTOM_DICT.items():
+    
+    # 캐싱 에러를 막기 위해 글로벌 변수 대신 지역 변수로 선언
+    custom_dict = {
+        "Arsenal": "아스날", "Aston Villa": "애스턴 빌라", "Newcastle": "뉴캐슬", "Crystal Palace": "크리스탈 팰리스",
+        "Manchester City": "맨시티", "Manchester United": "맨유", "Liverpool": "리버풀", "Chelsea": "첼시", "Tottenham": "토트넘",
+        "Real Madrid": "레알 마드리드", "Barcelona": "바르셀로나", "Atletico Madrid": "아틀레티코", "Bayern Munich": "바이에른 뮌헨",
+        "Paris Saint Germain": "PSG", "Inter": "인터밀란", "Juventus": "유벤투스", "AC Milan": "AC밀란",
+        "South Korea": "대한민국", "Japan": "일본", "Brazil": "브라질", "Argentina": "아르헨티나", "France": "프랑스", "England": "잉글랜드"
+    }
+    
+    for eng, kor in custom_dict.items():
         if eng.lower() == str(text).lower() or eng in str(text): return kor
     try: return GoogleTranslator(source='en', target='ko').translate(str(text).replace('<', '').replace('>', ''))
     except Exception: return str(text)
 
 # ==========================================
-# 4. 육각형 차트 함수
+# 4. 육각형 차트 생성 함수
 # ==========================================
 def create_html_radar(h_vals, a_vals, home_kr, away_kr):
     labels = ['공격력', '수비력', '최근폼', '상대전적', '득점력', '종합전력']
@@ -128,26 +126,30 @@ def create_html_radar(h_vals, a_vals, home_kr, away_kr):
     return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-top: 10px; margin-bottom: 10px;'>{badge}<div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
 # ==========================================
-# 5. API Fetcher
+# 5. API Fetcher (💡 HEADERS를 내부로 이동하여 캐시 충돌 100% 방지)
 # ==========================================
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_api_football_fixtures(league_id, season, date_str):
+    api_key = st.secrets.get("FOOTBALL_API_KEY", "")
+    local_headers = {'x-apisports-key': api_key} if api_key else {}
     try: 
-        res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params={"league": league_id, "season": season, "date": date_str, "timezone": "Asia/Seoul"}, timeout=10)
+        res = requests.get("https://v3.football.api-sports.io/fixtures", headers=local_headers, params={"league": league_id, "season": season, "date": date_str, "timezone": "Asia/Seoul"}, timeout=10)
         if res.status_code == 429: return "LIMIT"
         return res.json().get('response') or []
     except Exception: return []
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_api_football_standings(league_id, season):
+    api_key = st.secrets.get("FOOTBALL_API_KEY", "")
+    local_headers = {'x-apisports-key': api_key} if api_key else {}
     try:
-        res = requests.get("https://v3.football.api-sports.io/standings", headers=HEADERS, params={"league": league_id, "season": season}, timeout=10)
+        res = requests.get("https://v3.football.api-sports.io/standings", headers=local_headers, params={"league": league_id, "season": season}, timeout=10)
         if res.status_code == 200: return res.json().get('response') or []
         return []
     except Exception: return []
 
 # ==========================================
-# 6. 세이버메트릭스 & 예측 픽 코멘터리 엔진 (V68 완전수정)
+# 6. 세이버메트릭스 & 픽 엔진
 # ==========================================
 def generate_football_advanced_stats(h_team, a_team, h_prob, is_finished, h_score=0, a_score=0):
     a_prob = 100 - h_prob
@@ -155,10 +157,11 @@ def generate_football_advanced_stats(h_team, a_team, h_prob, is_finished, h_scor
     h_pass = round(75.0 + (h_prob - 50) * 0.3, 1); a_pass = round(75.0 + (a_prob - 50) * 0.3, 1)
     h_sot = round(3.5 + (h_prob - 50) * 0.1, 1); a_sot = round(3.5 + (a_prob - 50) * 0.1, 1)
     
+    # 💡 숫자가 아닌 None이 들어왔을 때를 대비한 0.0 처리 방어막
+    h_gf = float(h_score) if h_score is not None else 0.0
+    a_gf = float(a_score) if a_score is not None else 0.0
+    
     if is_finished:
-        # 안전한 숫자 변환
-        h_gf = float(h_score) if h_score else 0.0
-        a_gf = float(a_score) if a_score else 0.0
         h_margin = round(h_gf - a_gf, 1); a_margin = round(a_gf - h_gf, 1)
     else:
         h_gf = round(1.2 + (h_prob - 50) * 0.04, 2); a_gf = round(1.2 + (a_prob - 50) * 0.04, 2)
@@ -193,71 +196,47 @@ def get_lineup_table(home_kr, away_kr):
     </div>
     """
 
-# 💡 [핵심 버그 수정 완료] 숫자를 배제하고 직관적인 한글로 픽 및 코멘트 출력
 def get_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, h_score, a_score):
     d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0)
     a_prob = 100.0 - h_prob - d_prob
     
-    # 1. 승무패 직관적 픽
-    if h_prob > a_prob + 10 and h_prob > d_prob: 
-        pred_win = "home"
-        win_txt = f"🟢 {home_kr} 승리 유력"
-    elif a_prob > h_prob + 10 and a_prob > d_prob: 
-        pred_win = "away"
-        win_txt = f"🔵 {away_kr} 승리 유력"
-    else: 
-        pred_win = "draw"
-        win_txt = "🟡 치열한 접전 (무승부 가능성)"
+    # 승무패
+    if h_prob > a_prob + 10 and h_prob > d_prob: pred_win = "home"; win_txt = f"🟢 {home_kr} 승리 유력"
+    elif a_prob > h_prob + 10 and a_prob > d_prob: pred_win = "away"; win_txt = f"🔵 {away_kr} 승리 유력"
+    else: pred_win = "draw"; win_txt = "🟡 치열한 접전 (무승부 가능성)"
     
-    # 2. 핸디캡 직관적 픽 (대승 vs 신승/선방)
-    if h_prob > 60: 
-        pred_handi = "home"
-        handi_txt = f"💪 {home_kr} 2골 차 이상 대승 기대"
-    elif a_prob > 60:
-        pred_handi = "away"
-        handi_txt = f"💪 {away_kr} 2골 차 이상 대승 기대"
-    elif pred_win == "home":
-        pred_handi = "away"
-        handi_txt = f"🛡️ {away_kr}의 탄탄한 방어 (1골 차 신승 승부)"
-    else: 
-        pred_handi = "home"
-        handi_txt = f"🛡️ {home_kr}의 탄탄한 방어 (1골 차 신승 승부)"
+    # 핸디캡
+    if h_prob > 60: pred_handi = "home"; handi_txt = f"💪 {home_kr} 2골 차 이상 대승 기대"
+    elif a_prob > 60: pred_handi = "away"; handi_txt = f"💪 {away_kr} 2골 차 이상 대승 기대"
+    elif pred_win == "home": pred_handi = "away"; handi_txt = f"🛡️ {away_kr}의 탄탄한 방어 (1골 차 승부)"
+    else: pred_handi = "home"; handi_txt = f"🛡️ {home_kr}의 탄탄한 방어 (1골 차 승부)"
         
-    # 3. 언오버 직관적 픽
+    # 언오버
     exp_total = h_gf + a_gf
-    if exp_total > 2.6: 
-        pred_ou = "over"
-        ou_txt = "🔥 화력 집중! 고득점 양상"
-    else: 
-        pred_ou = "under"
-        ou_txt = "❄️ 짠물 수비! 저득점 늪"
+    if exp_total > 2.6: pred_ou = "over"; ou_txt = "🔥 화력 집중! 고득점 양상"
+    else: pred_ou = "under"; ou_txt = "❄️ 짠물 수비! 저득점 늪"
         
-    # 4. 적중 판별 로직 수정 (텍스트 기반이므로 점수 차이로 판별)
+    # 적중 판별
     win_badge = handi_badge = ou_badge = ""
     if is_finished:
         try:
-            h_s = float(h_score) if h_score else 0.0
-            a_s = float(a_score) if a_score else 0.0
+            h_s = float(h_score) if h_score is not None else 0.0
+            a_s = float(a_score) if a_score is not None else 0.0
             
-            # 승패 결과
             actual_win = "home" if h_s > a_s else ("away" if a_s > h_s else "draw")
             win_badge = "<span class='badge-hit'>적중</span>" if pred_win == actual_win else "<span class='badge-miss'>미적중</span>"
             
-            # 핸디 결과 (대승 여부: 점수차가 2점 이상인가?)
             margin = abs(h_s - a_s)
-            if "대승" in handi_txt:
-                actual_handi = "hit" if margin >= 2 and actual_win == pred_win else "miss"
-            else:
-                actual_handi = "hit" if margin <= 1 else "miss"
+            if "대승" in handi_txt: actual_handi = "hit" if margin >= 2 and actual_win == pred_win else "miss"
+            else: actual_handi = "hit" if margin <= 1 else "miss"
             handi_badge = "<span class='badge-hit'>적중</span>" if actual_handi == "hit" else "<span class='badge-miss'>미적중</span>"
             
-            # 언오버 결과 (3점 이상인가?)
             actual_ou = "over" if (h_s + a_s) > 2.5 else "under"
             ou_badge = "<span class='badge-hit'>적중</span>" if pred_ou == actual_ou else "<span class='badge-miss'>미적중</span>"
         except Exception:
             pass
 
-    # 5. AI 코멘터리 생성
+    # AI 코멘트
     if pred_win == "home" and pred_ou == "over": comment = f"홈 이점을 등에 업은 {home_kr}의 폭발적인 공격력이 경기를 지배할 것입니다."
     elif pred_win == "away" and pred_ou == "under": comment = f"{away_kr}이 탄탄한 수비 조직력으로 상대의 공세를 틀어막고 승리를 가져갈 확률이 높습니다."
     elif pred_win == "draw": comment = "중원에서의 치열한 주도권 싸움이 예상되며, 쉽게 승부가 나지 않는 팽팽한 양상이 전개됩니다."
@@ -268,7 +247,7 @@ def get_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finis
 # ==========================================
 # 7. 메인 UI (사이드바)
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V68 완전방어판)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V69 무결점 완벽판)</h1>", unsafe_allow_html=True)
 
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -314,7 +293,6 @@ if selected_sport == "축구":
         "292":"K리그1", "293":"K리그2", "98":"J1리그", "1":"월드컵", "2":"챔피언스리그", 
         "3":"유로파리그", "10":"A매치", "39":"프리미어리그", "140":"라리가", "135":"세리에 A", "78":"분데스리가"
     }
-    
     SPRING_TO_AUTUMN_LEAGUES = ["292", "293", "98", "1", "10"]
 
     if analyze_button:
@@ -373,12 +351,14 @@ if selected_sport == "축구":
                         status = match['fixture']['status']['short']
                         is_finished = status in ['FT', 'AET', 'PEN']
                         
-                        # 안전한 점수 변환
+                        # 💡 0.0 처리 방어 로직 적용
                         h_score = match['goals']['home']
                         a_score = match['goals']['away']
+                        h_print = h_score if h_score is not None else 0
+                        a_print = a_score if a_score is not None else 0
                         
-                        if is_finished: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{h_score}:{a_score}"
-                        elif status in ['1H', 'HT', '2H', 'ET']: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{h_score}:{a_score}"
+                        if is_finished: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{h_print}:{a_print}"
+                        elif status in ['1H', 'HT', '2H', 'ET']: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{h_print}:{a_print}"
                         else: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time})"; s_color="#888"; s_txt="VS"
 
                         match_disp = f"<div class='match-box'><div class='team-side home-side'><div class='team-name'>{home_kr}</div><img src='{h_logo}' class='team-logo'></div><div class='score-side' style='color:{s_color};'>{s_txt}</div><div class='team-side away-side'><img src='{a_logo}' class='team-logo'><div class='team-name'>{away_kr}</div></div></div>"
