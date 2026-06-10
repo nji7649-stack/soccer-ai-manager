@@ -12,10 +12,10 @@ import random
 # ==========================================
 st.set_page_config(page_title="AI 종합 스포츠 분석실 PRO MAX", page_icon="🏆", layout="wide")
 
-
-    
+try:
+    FOOTBALL_API_KEY = st.secrets.get("FOOTBALL_API_KEY", "")
 except:
-    FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
+    FOOTBALL_API_KEY = ""
 # 만약 직접 키를 넣고 싶으시면 위 줄을 지우고 아래처럼 따옴표 안에 키를 넣으세요!
 # FOOTBALL_API_KEY = "내_API_키_입력"
 
