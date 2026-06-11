@@ -21,7 +21,7 @@ if not FOOTBALL_API_KEY:
     FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
 
 # ==========================================
-# 2. 🎨 UI CSS (배지 규격 통일 & 코멘트 정렬)
+# 2. 🎨 UI CSS (텍스트 컬러화 & 리얼 골드 적용)
 # ==========================================
 custom_css = """
 <style>
@@ -43,6 +43,7 @@ custom_css = """
 [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
 
+/* 매치 카드 레이아웃 */
 .card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 15px; display: flex; flex-direction: column; justify-content: space-between; height: 570px; box-sizing: border-box; overflow: hidden; }
 .card-top { flex-shrink: 0; width: 100%; }
 .card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin: 10px 0; width: 100%; }
@@ -78,13 +79,13 @@ custom_css = """
 .badge-right { display: flex; align-items: center; gap: 8px; }
 .badge-type-text { font-size: 11px; color: #888; font-weight: bold; }
 
-/* 💡 상태 라벨 (적중/미적중) 규격 및 색상 완벽 통일 */
-.status-label { display: inline-block; width: 52px; text-align: center; padding: 3px 0; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; box-sizing: border-box; }
-.label-hit { background-color: #D4AF37; } /* 🌟 황금색으로 변경 */
-.label-miss { background-color: #EF5350; } /* 빨간색 유지 */
-.label-pending { background-color: #444; color: #aaa; }
+/* 💡 [핵심] 배경 박스 삭제 & 글자색만으로 표현 */
+.status-label { width: 45px; text-align: right; font-size: 13.5px; font-weight: 900; letter-spacing: 0.5px; background: none !important; padding: 0 !important; }
+.label-hit { color: #FFD700; text-shadow: 0 0 6px rgba(255, 215, 0, 0.4); } /* 🌟 찐한 리얼 골드 + 약간의 글로우 효과 */
+.label-miss { color: #FF4444; } /* 🔴 강렬한 레드 */
+.label-pending { color: #555; font-weight: 600; }
 
-/* 💡 AI 코멘트 1줄 고정 깔끔 처리 */
+/* 💡 AI 코멘트 1줄 고정 (넘치면 ...) */
 .ai-advice { font-size: 11.5px; color: #bbb; margin-top: 8px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; padding-left: 5px; }
 </style>
 """
@@ -318,23 +319,20 @@ def generate_baseball_advanced_stats(h_team, a_team, h_exp, a_exp, h_s_fip, a_s_
 def get_baseball_prediction_badges(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, h_score, a_score):
     a_prob = 100.0 - h_prob
     
-    # 1. 승리
     win_status = "PENDING"
     if h_prob >= 58.0: win_code = "home"; win_txt = f"{home_kr} 완승 유력"
     elif a_prob >= 58.0: win_code = "away"; win_txt = f"{away_kr} 완승 유력"
-    elif h_prob >= 53.0: win_code = "home"; win_txt = f"{home_kr} 우세"
-    elif a_prob >= 53.0: win_code = "away"; win_txt = f"{away_kr} 우세"
+    elif h_prob >= 53.0: win_code = "home"; win_txt = f"{home_kr} 일반 승 우세"
+    elif a_prob >= 53.0: win_code = "away"; win_txt = f"{away_kr} 일반 승 우세"
     elif h_prob >= 50.0: win_code = "home"; win_txt = f"1점차 접전 ({home_kr} 승)"
     else: win_code = "away"; win_txt = f"1점차 접전 ({away_kr} 승)"
     
-    # 2. 핸디
     handi_status = "PENDING"
     if h_prob >= 58.0: handi_code = "home"; handi_txt = f"{home_kr} -1.5 마핸 승"
     elif a_prob >= 58.0: handi_code = "away"; handi_txt = f"{away_kr} -1.5 마핸 승"
     elif win_code == "home": handi_code = "away"; handi_txt = f"{away_kr} +1.5 플핸 방어"
     else: handi_code = "home"; handi_txt = f"{home_kr} +1.5 플핸 방어"
         
-    # 3. 언오바
     ou_status = "PENDING"
     exp_total = h_exp + a_exp
     ou_line = 8.5 
@@ -344,8 +342,7 @@ def get_baseball_prediction_badges(home_kr, away_kr, h_prob, h_exp, a_exp, is_fi
     if is_finished:
         try:
             h_s = float(h_score) if h_score not in [None, ""] else 0.0; a_s = float(a_score) if a_score not in [None, ""] else 0.0
-            margin = h_s - a_s
-            actual_win = "home" if margin > 0 else "away"
+            actual_win = "home" if h_s > a_s else "away"
             win_status = "HIT" if win_code == actual_win else "MISS"
             
             actual_handi = "home" if (h_s - 1.5) > a_s else "away"
@@ -375,10 +372,10 @@ def get_baseball_lineup_table(home_kr, away_kr):
 # ==========================================
 # 7. 메인 UI 및 앱 흐름 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V86 UI 마스터)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V87 파이널 디자인)</h1>", unsafe_allow_html=True)
 
 if FOOTBALL_API_KEY == "여기에_API_키를_입력하세요" or not FOOTBALL_API_KEY:
-    st.error("🚨 잠시만요! 앱 코드 20번째 줄에 **API-Football 키(API KEY)**가 입력되지 않았습니다. 키를 따옴표 안에 넣고 저장해주세요!")
+    st.error("🚨 잠시만요! 앱 코드 21번째 줄에 **API-Football 키(API KEY)**가 입력되지 않았습니다. 키를 따옴표 안에 넣고 저장해주세요!")
     st.stop()
 
 sport_options = ["축구", "야구", "농구", "배구"]
@@ -480,7 +477,8 @@ if selected_sport == "축구":
                         rank_diff = standings_dict[away_id] - standings_dict[home_id]
                         h_prob = max(20.0, min(80.0, 40.0 + (rank_diff * 1.5) + 3.0))
                     else:
-                        seed = sum(ord(c) for c in home_kr + away_kr); h_prob = 35.0 + (seed % 30)
+                        seed = sum(ord(c) for c in home_kr + away_kr)
+                        h_prob = 35.0 + (seed % 30)
                         
                     d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0); a_prob = 100.0 - h_prob - d_prob
                     
@@ -593,7 +591,7 @@ elif selected_sport == "야구":
                         
                         pf = MLB_PARK_FACTORS.get(home_team, 1.00)
                         h_prob, a_prob, h_exp, a_exp = run_mlb_simulation(h_s_fip, a_s_fip, h_s_ip, a_s_ip, h_final_ops, a_final_ops, h_bp_fip, a_bp_fip, pf)
-                    except Exception:
+                    except:
                         seed = sum(ord(c) for c in home_kr + away_kr)
                         h_prob = 43.0 + (seed % 14); a_prob = 100.0 - h_prob
                         h_exp = 3.5 + (seed % 20) / 10.0; a_exp = 3.5 + ((seed * 2) % 20) / 10.0
@@ -617,6 +615,7 @@ elif selected_sport == "야구":
         except: pass
         
         progress_bar.progress(1.0); status_text.text("✅ MLB 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
+        
         if temp_cards_data: temp_cards_data.sort(key=lambda x: x['sort_time']); st.session_state['sports_cards_data'] = temp_cards_data
         if match_count == 0: st.info("선택하신 날짜에 배정된 MLB 경기가 없습니다.")
 
