@@ -21,15 +21,11 @@ if not FOOTBALL_API_KEY:
     FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
 
 # ==========================================
-# 2. 🎨 UI CSS (궁서체 적용 & 배지 정렬 완벽 픽스)
+# 2. 🎨 UI CSS (기본 폰트 복구 & 칼각 정렬)
 # ==========================================
 custom_css = """
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
-
-/* 💡 [핵심] 프로그램 전체 폰트를 '궁서체'로 강제 변경 */
-* { font-family: 'Gungsuh', 'GungsuhChe', '궁서', '궁서체', serif !important; }
-
 .stApp { background-color: #0e1117; }
 
 [data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child { display: none !important; }
@@ -75,24 +71,24 @@ custom_css = """
 .detail-table th { background-color: #222; padding: 6px 2px; border-bottom: 1px solid #444; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .detail-table td { padding: 6px 2px; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } 
 
-.standings-header { font-size: 17px; font-weight: bold; color: #00E676; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
+.standings-header { font-size: 16px; font-weight: bold; color: #00E676; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
 
 /* 💡 사진 UI 알약 배지 스타일 */
 .prediction-badge { display: flex; align-items: center; justify-content: space-between; background-color: #151515; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; border: 1px solid #333; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-.badge-left { display: flex; align-items: center; gap: 8px; color: #fff; font-size: 14px; font-weight: bold; }
+.badge-left { display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13.5px; font-weight: bold; }
 
-/* 💡 [핵심] 글자 간격 완벽 정렬을 위한 픽스 */
-.badge-right { display: flex; align-items: center; justify-content: flex-end; width: 110px; }
-.badge-type-text { font-size: 12px; color: #888; font-weight: bold; margin-right: auto; }
+/* 💡 [핵심] 글자 간격 자로 잰 듯 완벽 정렬을 위한 픽스 */
+.badge-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; width: 110px; }
+.badge-type-text { font-size: 11px; color: #888; font-weight: bold; text-align: right; width: 50px; }
 
-/* 💡 상태 라벨 (적중/미적중) 규격 및 색상 완벽 통일 */
-.status-label { display: inline-block; width: 55px; text-align: right; font-size: 14px; font-weight: 900; letter-spacing: 0px; background: none !important; padding: 0 !important; margin-left: 5px; text-shadow: none !important; }
-.label-hit { color: #FFD700 !important; } /* 선명한 리얼 골드 */
-.label-miss { color: #FF4444 !important; } /* 선명한 레드 */
+/* 💡 적중/미적중 텍스트 상자를 가운데 정렬로 고정해 삐뚤어짐 방지 */
+.status-label { display: inline-block; width: 50px; text-align: center; font-size: 13.5px; font-weight: 900; background: transparent !important; padding: 0 !important; margin: 0 !important; }
+.label-hit { color: #FFD700 !important; } 
+.label-miss { color: #FF4444 !important; } 
 .label-pending { color: #555 !important; font-weight: 600; }
 
 /* AI 코멘트 1줄 고정 (넘치면 ...) */
-.ai-advice { font-size: 12px; color: #bbb; margin-top: 8px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; padding-left: 5px; }
+.ai-advice { font-size: 11.5px; color: #bbb; margin-top: 8px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; padding-left: 5px; }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -157,7 +153,7 @@ def create_html_radar(h_prob, home_kr, away_kr, is_custom=False, sport_type="축
         svg += f"<line x1='{center}' y1='{center}' x2='{x}' y2='{y}' style='stroke:#444; stroke-width:1;' />"
         lx = center + (size * 0.44) * math.cos(ang); ly = center + (size * 0.44) * math.sin(ang)
         anchor = "start" if lx > center + 10 else ("end" if lx < center - 10 else "middle")
-        svg += f"<text x='{lx}' y='{ly+4}' fill='#ddd' font-size='11' font-weight='bold' text-anchor='{anchor}'>{labels[i]}</text>"
+        svg += f"<text x='{lx}' y='{ly+4}' fill='#ddd' font-size='10' font-weight='bold' text-anchor='{anchor}'>{labels[i]}</text>"
     for ratio in [0.33, 0.66, 1.0]:
         pts = " ".join([f"{center + (size*0.35)*ratio*math.cos((math.pi*2/6)*i - math.pi/2)},{center + (size*0.35)*ratio*math.sin((math.pi*2/6)*i - math.pi/2)}" for i in range(6)])
         svg += f"<polygon points='{pts}' style='fill:none; stroke:#333; stroke-width:1;' />"
@@ -166,7 +162,7 @@ def create_html_radar(h_prob, home_kr, away_kr, is_custom=False, sport_type="축
     a_poly = f"<polygon points='{pts_a}' style='fill:rgba(239, 83, 80, 0.3); stroke:#EF5350; stroke-width:2; opacity:0.6;' />"
     badge = "⚙️ 자체 환산 전력망" if is_custom else "⚙️ 딥-스캔 전력망"
     
-    return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-top:10px; margin-bottom:10px;'><div style='color:#ff9800; font-size:12px; margin-bottom:5px;'>{badge}</div><div style='font-size:12px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
+    return f"<div style='display:flex; flex-direction:column; align-items:center; background:#0a0a0a; border:1px solid #333; border-radius:8px; padding:10px; margin-top:10px; margin-bottom:10px;'><div style='color:#ff9800; font-size:11px; margin-bottom:5px;'>{badge}</div><div style='font-size:11px; color:#fff; margin-bottom:10px; font-weight:bold; text-align:center;'><span style='color:#4FC3F7;'>■</span> {home_kr} <span style='margin:0 10px; color:#777;'>vs</span> <span style='color:#EF5350;'>■</span> {away_kr}</div><svg viewBox='0 0 {size} {size}' style='width: 100%; max-width: {size}px; height: auto;'>{svg}{h_poly}{a_poly}</svg></div>"
 
 # ==========================================
 # 5. 축구 전용 로직
@@ -209,7 +205,7 @@ def generate_soccer_advanced_stats(h_team, a_team, h_prob, is_finished, h_score,
     margin_text_h = f"<span style='color:#4FC3F7;'>+{h_margin}</span>" if h_margin > 0 else f"<span style='color:#EF5350;'>{h_margin}</span>"
     margin_text_a = f"<span style='color:#4FC3F7;'>+{a_margin}</span>" if a_margin > 0 else f"<span style='color:#EF5350;'>{a_margin}</span>"
 
-    html = f"<div class='table-wrapper'><div style='text-align:center; font-size:12px; color:#00E676; margin-bottom:5px; font-weight:bold;'>{title_text}</div><table class='detail-table'><tr style='background-color:#111;'><th style='color:#4FC3F7; width:33%;'>{h_team}</th><th style='color:#aaa; width:34%;'>비교 스탯</th><th style='color:#EF5350; width:33%;'>{a_team}</th></tr><tr><td style='color:#fff; font-weight:bold;'>{h_gf}</td><td style='color:#aaa;'>평균 득점력</td><td style='color:#fff; font-weight:bold;'>{a_gf}</td></tr><tr><td>{margin_text_h}</td><td style='color:#aaa;'>골득실 마진</td><td>{margin_text_a}</td></tr><tr><td style='color:#fff;'>{h_pos}%</td><td style='color:#aaa;'>평균 점유율</td><td style='color:#fff;'>{a_pos}%</td></tr><tr><td style='color:#fff;'>{h_pass}%</td><td style='color:#aaa;'>패스 성공률</td><td style='color:#fff;'>{a_pass}%</td></tr><tr><td style='color:#fff;'>{h_sot}개</td><td style='color:#aaa;'>유효 슈팅</td><td style='color:#fff;'>{a_sot}개</td></tr></table></div>"
+    html = f"<div class='table-wrapper'><div style='text-align:center; font-size:11.5px; color:#00E676; margin-bottom:5px; font-weight:bold;'>{title_text}</div><table class='detail-table'><tr style='background-color:#111;'><th style='color:#4FC3F7; width:33%;'>{h_team}</th><th style='color:#aaa; width:34%;'>비교 스탯</th><th style='color:#EF5350; width:33%;'>{a_team}</th></tr><tr><td style='color:#fff; font-weight:bold;'>{h_gf}</td><td style='color:#aaa;'>평균 득점력</td><td style='color:#fff; font-weight:bold;'>{a_gf}</td></tr><tr><td>{margin_text_h}</td><td style='color:#aaa;'>골득실 마진</td><td>{margin_text_a}</td></tr><tr><td style='color:#fff;'>{h_pos}%</td><td style='color:#aaa;'>평균 점유율</td><td style='color:#fff;'>{a_pos}%</td></tr><tr><td style='color:#fff;'>{h_pass}%</td><td style='color:#aaa;'>패스 성공률</td><td style='color:#fff;'>{a_pass}%</td></tr><tr><td style='color:#fff;'>{h_sot}개</td><td style='color:#aaa;'>유효 슈팅</td><td style='color:#fff;'>{a_sot}개</td></tr></table></div>"
     return html, h_gf, a_gf
 
 def get_soccer_prediction_badges(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, h_score, a_score):
@@ -218,8 +214,8 @@ def get_soccer_prediction_badges(home_kr, away_kr, h_prob, h_gf, a_gf, is_finish
     win_status = "PENDING"
     if h_prob >= 60.0: win_code = "home"; win_txt = f"{home_kr} 완승 유력"
     elif a_prob >= 60.0: win_code = "away"; win_txt = f"{away_kr} 완승 유력"
-    elif h_prob > a_prob: win_code = "home"; win_txt = f"{home_kr} 우세"
-    else: win_code = "away"; win_txt = f"{away_kr} 우세"
+    elif h_prob > a_prob: win_code = "home"; win_txt = f"1점차 접전 ({home_kr} 우세)"
+    else: win_code = "away"; win_txt = f"1점차 접전 ({away_kr} 우세)"
     
     handi_status = "PENDING"
     if h_prob >= 60.0: handi_code = "home"; handi_txt = f"{home_kr} -1.0 마핸 승"
@@ -320,16 +316,16 @@ def run_mlb_simulation(h_fip, a_fip, h_avg_ip, a_avg_ip, h_ops, a_ops, h_bp_fip,
     return (h_wins/num_sims)*100, (a_wins/num_sims)*100, h_expected_runs, a_expected_runs
 
 def generate_baseball_advanced_stats(h_team, a_team, h_exp, a_exp, h_s_fip, a_s_fip, h_ops, a_ops):
-    return f"<div class='table-wrapper'><div style='text-align:center; font-size:12px; color:#00E676; margin-bottom:5px; font-weight:bold;'>⚾ AI 심층 전력 지표</div><table class='detail-table'><tr style='background-color:#111;'><th style='color:#4FC3F7; width:33%;'>{h_team}</th><th style='color:#aaa; width:34%;'>비교 스탯</th><th style='color:#EF5350; width:33%;'>{a_team}</th></tr><tr><td style='color:#fff; font-weight:bold;'>{h_exp:.1f}</td><td style='color:#aaa;'>기대 득점</td><td style='color:#fff; font-weight:bold;'>{a_exp:.1f}</td></tr><tr><td style='color:#fff;'>{h_s_fip:.2f}</td><td style='color:#aaa;'>선발 FIP</td><td style='color:#fff;'>{a_s_fip:.2f}</td></tr><tr><td style='color:#fff;'>{h_ops:.3f}</td><td style='color:#aaa;'>평균 OPS</td><td style='color:#fff;'>{a_ops:.3f}</td></tr></table></div>"
+    return f"<div class='table-wrapper'><div style='text-align:center; font-size:11.5px; color:#00E676; margin-bottom:5px; font-weight:bold;'>⚾ AI 심층 전력 지표</div><table class='detail-table'><tr style='background-color:#111;'><th style='color:#4FC3F7; width:33%;'>{h_team}</th><th style='color:#aaa; width:34%;'>비교 스탯</th><th style='color:#EF5350; width:33%;'>{a_team}</th></tr><tr><td style='color:#fff; font-weight:bold;'>{h_exp:.1f}</td><td style='color:#aaa;'>기대 득점</td><td style='color:#fff; font-weight:bold;'>{a_exp:.1f}</td></tr><tr><td style='color:#fff;'>{h_s_fip:.2f}</td><td style='color:#aaa;'>선발 FIP</td><td style='color:#fff;'>{a_s_fip:.2f}</td></tr><tr><td style='color:#fff;'>{h_ops:.3f}</td><td style='color:#aaa;'>평균 OPS</td><td style='color:#fff;'>{a_ops:.3f}</td></tr></table></div>"
 
 def get_baseball_prediction_badges(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, h_score, a_score):
     a_prob = 100.0 - h_prob
     
     win_status = "PENDING"
-    if h_prob >= 58.0: win_code = "home"; win_txt = f"{home_kr} 완승 유력"
-    elif a_prob >= 58.0: win_code = "away"; win_txt = f"{away_kr} 완승 유력"
-    elif h_prob >= 53.0: win_code = "home"; win_txt = f"{home_kr} 우세"
-    elif a_prob >= 53.0: win_code = "away"; win_txt = f"{away_kr} 우세"
+    if h_prob >= 58.0: win_code = "home"; win_txt = f"🟢 {home_kr} 완승 유력"
+    elif a_prob >= 58.0: win_code = "away"; win_txt = f"🔵 {away_kr} 완승 유력"
+    elif h_prob >= 53.0: win_code = "home"; win_txt = f"🟢 {home_kr} 우세"
+    elif a_prob >= 53.0: win_code = "away"; win_txt = f"🔵 {away_kr} 우세"
     elif h_prob >= 50.0: win_code = "home"; win_txt = f"1점차 접전 ({home_kr} 승)"
     else: win_code = "away"; win_txt = f"1점차 접전 ({away_kr} 승)"
     
@@ -376,9 +372,9 @@ def get_baseball_lineup_table(home_kr, away_kr):
     return f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:50%;'>{home_kr} (타순)</th><th style='color:#EF5350; width:50%;'>{away_kr} (타순)</th></tr><tr><td style='color:#888;'>발표 대기중</td><td style='color:#888;'>발표 대기중</td></tr></table></div>"
 
 # ==========================================
-# 7. 메인 UI 및 앱 흐름 시작
+# 7. 메인 UI 및 앱 흐름
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V88 궁극체)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V90 정렬 픽스판)</h1>", unsafe_allow_html=True)
 
 if FOOTBALL_API_KEY == "여기에_API_키를_입력하세요" or not FOOTBALL_API_KEY:
     st.error("🚨 잠시만요! 앱 코드 20번째 줄에 **API-Football 키(API KEY)**가 입력되지 않았습니다. 키를 따옴표 안에 넣고 저장해주세요!")
@@ -449,7 +445,7 @@ if selected_sport == "축구":
             date_str = selected_date.strftime('%Y-%m-%d')
             matches = fetch_api_football_fixtures(FOOTBALL_API_KEY, league_id, calc_season, date_str)
             if matches == "AUTH_ERROR": st.error("🚨 API 키가 올바르지 않거나 권한이 없습니다."); limit_hit = True; break
-            elif matches == "LIMIT": st.error("🚨 API 무료 호출 한도 초 초과!"); limit_hit = True; break
+            elif matches == "LIMIT": st.error("🚨 API 무료 호출 한도 초과!"); limit_hit = True; break
             
             if matches and isinstance(matches, list):
                 for match in matches:
@@ -646,7 +642,7 @@ if st.session_state.get('sports_cards_data'):
             )
             st.markdown(html_str, unsafe_allow_html=True)
             
-            with st.expander("🔍 육각형 지표 & 명단 확인"):
+            with st.expander("🔍 육각형 지표 & 선발 확인"):
                 if card.get('radar_html'): st.markdown(card['radar_html'], unsafe_allow_html=True)
                 if card.get('lineup_html'): st.markdown(card['lineup_html'], unsafe_allow_html=True)
             st.write("")
