@@ -21,7 +21,7 @@ if not FOOTBALL_API_KEY:
     FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
 
 # ==========================================
-# 2. 🎨 UI CSS
+# 2. 🎨 UI CSS (💡 높이 유동성 확보로 잘림 완벽 해결)
 # ==========================================
 custom_css = """
 <style>
@@ -42,11 +42,11 @@ custom_css = """
 [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
 
-/* 매치 카드 레이아웃 (배당률 박스 제거로 높이 최적화) */
-.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 15px; display: flex; flex-direction: column; justify-content: space-between; height: 570px; box-sizing: border-box; overflow: hidden; }
+/* 💡 [핵심 패치] 카드 높이를 고정하지 않고 내용에 맞춰 늘어나게 변경 */
+.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 15px; display: flex; flex-direction: column; justify-content: space-between; min-height: 580px; height: auto; box-sizing: border-box; }
 .card-top { flex-shrink: 0; width: 100%; }
 .card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin: 10px 0; width: 100%; }
-.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 12px; text-align: center; width: 100%; height: 165px; }
+.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 12px; text-align: center; width: 100%; min-height: 180px; height: auto; }
 
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 10px; }
@@ -57,6 +57,11 @@ custom_css = """
 .score-side { width: 24%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; white-space: nowrap; }
 .team-logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; background-color: #fff; border-radius: 50%; padding: 2px; }
 .referee-txt { font-size: 11px; color: #888; text-align: center; margin-bottom: 5px; }
+
+/* 배당률(Odds) 박스 */
+.odds-box { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.odds-item { background-color: #222; border: 1px solid #444; border-radius: 4px; padding: 4px 10px; font-size: 12px; color: #ddd; font-weight: bold; width: 70px; text-align: center; }
+.odds-val { color: #00E676; margin-left: 4px; font-family: 'Courier New', Courier, monospace; font-size: 13px; }
 
 .prob-wrapper { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
 .prob-text { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-bottom: 6px; width: 100%; padding: 0 2px; box-sizing: border-box; }
@@ -72,6 +77,7 @@ custom_css = """
 
 .standings-header { font-size: 16px; font-weight: bold; color: #00E676; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
 
+/* 알약 배지 스타일 */
 .prediction-badge { display: flex; align-items: center; justify-content: space-between; background-color: #151515; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; border: 1px solid #333; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
 .badge-left { display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13.5px; font-weight: bold; }
 .badge-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; width: 110px; }
@@ -115,6 +121,21 @@ def safe_float(value, default=0.0):
     if value is None or value == "": return default
     try: return float(str(value).replace('%', '').replace('+', '').replace('-', ''))
     except: return default
+
+def calculate_odds(p_h, p_d, p_a, sport="축구"):
+    margin = 0.95 
+    try:
+        if sport == "축구":
+            odd_h = margin / (p_h / 100.0) if p_h > 0 else 0
+            odd_d = margin / (p_d / 100.0) if p_d > 0 else 0
+            odd_a = margin / (p_a / 100.0) if p_a > 0 else 0
+            return f"<div class='odds-box'><div class='odds-item'>승<span class='odds-val'>{odd_h:.2f}</span></div><div class='odds-item'>무<span class='odds-val'>{odd_d:.2f}</span></div><div class='odds-item'>패<span class='odds-val'>{odd_a:.2f}</span></div></div>"
+        else:
+            odd_h = margin / (p_h / 100.0) if p_h > 0 else 0
+            odd_a = margin / (p_a / 100.0) if p_a > 0 else 0
+            return f"<div class='odds-box'><div class='odds-item'>홈 승<span class='odds-val'>{odd_h:.2f}</span></div><div class='odds-item'>원정 승<span class='odds-val'>{odd_a:.2f}</span></div></div>"
+    except:
+        return "<div class='odds-box'><div class='odds-item'>배당<span class='odds-val'>-</span></div></div>"
 
 def create_prediction_badge_html(icon, pred_text, type_text, status):
     status_text = "대기"
@@ -240,10 +261,8 @@ def get_soccer_prediction_badges(home_kr, away_kr, h_prob, h_gf, a_gf, is_finish
         
     ou_status = "PENDING"
     exp_total = h_gf + a_gf
-    
-    # 💡 [핵심] 유동적 언오버 기준점 적용 (축구)
     ou_line = math.floor(exp_total) + 0.5
-    ou_line = max(1.5, min(4.5, ou_line)) # 1.5 ~ 4.5 사이로 현실적 고정
+    ou_line = max(1.5, min(4.5, ou_line)) 
     
     if exp_total >= ou_line: ou_code = "over"; ou_txt = f"{ou_line} 오버 유력"
     else: ou_code = "under"; ou_txt = f"{ou_line} 언더 유력"
@@ -361,10 +380,8 @@ def get_baseball_prediction_badges(home_kr, away_kr, h_prob, h_exp, a_exp, is_fi
         
     ou_status = "PENDING"
     exp_total = h_exp + a_exp
-    
-    # 💡 [핵심] 유동적 언오버 기준점 적용 (야구)
     ou_line = round(exp_total * 2) / 2
-    ou_line = max(6.5, min(12.5, ou_line)) # 6.5 ~ 12.5 사이로 현실적 고정
+    ou_line = max(6.5, min(12.5, ou_line)) 
     
     if exp_total > ou_line: ou_code = "over"; ou_txt = f"{ou_line} 오버 유력"
     else: ou_code = "under"; ou_txt = f"{ou_line} 언더 유력"
@@ -402,7 +419,7 @@ def get_baseball_lineup_table(home_kr, away_kr):
 # ==========================================
 # 7. 메인 UI 및 앱 흐름 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V95 디테일 패치)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V96 다이내믹 패치)</h1>", unsafe_allow_html=True)
 
 if FOOTBALL_API_KEY == "여기에_API_키를_입력하세요" or not FOOTBALL_API_KEY:
     st.error("🚨 잠시만요! 앱 코드 20번째 줄에 **API-Football 키(API KEY)**가 입력되지 않았습니다. 키를 따옴표 안에 넣고 저장해주세요!")
@@ -419,7 +436,7 @@ st.sidebar.markdown("<br>", unsafe_allow_html=True)
 if 'sports_cards_data' not in st.session_state: st.session_state['sports_cards_data'] = []
 
 # ==========================================
-# ⚽ 8. 축구 로직
+# ⚽ 8. 축구 로직 
 # ==========================================
 if selected_sport == "축구":
     analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
@@ -488,7 +505,6 @@ if selected_sport == "축구":
                     goals_h = match.get('goals', {}).get('home'); goals_a = match.get('goals', {}).get('away')
                     h_print = int(goals_h) if goals_h is not None else 0; a_print = int(goals_a) if goals_a is not None else 0
                     
-                    # 💡 [핵심] 이기고 있는 팀의 스코어는 흰색, 지는 팀은 회색 처리
                     if is_finished or is_live:
                         top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>" if is_finished else f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"
                         s_color = "#00E676" if is_finished else "#ff5252"
@@ -507,12 +523,7 @@ if selected_sport == "축구":
                         seed = sum(ord(c) for c in home_kr + away_kr); h_prob = 35.0 + (seed % 30)
                         
                     d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0); a_prob = 100.0 - h_prob - d_prob
-                    
-                    # 💡 배당률 산출
-                    margin_rate = 0.95
-                    odd_h = f"{margin_rate / (h_prob / 100.0):.2f}"
-                    odd_d = f"{margin_rate / (d_prob / 100.0):.2f}"
-                    odd_a = f"{margin_rate / (a_prob / 100.0):.2f}"
+                    odd_h = f"{0.95 / (h_prob / 100.0):.2f}"; odd_d = f"{0.95 / (d_prob / 100.0):.2f}"; odd_a = f"{0.95 / (a_prob / 100.0):.2f}"
 
                     adv_html, h_gf, a_gf = generate_soccer_advanced_stats(home_kr, away_kr, h_prob, is_finished, goals_h, goals_a)
                     badges_html, ai_comment = get_soccer_prediction_badges(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, goals_h, goals_a)
@@ -532,7 +543,7 @@ if selected_sport == "축구":
             
         progress_bar.progress(1.0); status_text.text("✅ 축구 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
         if temp_cards_data: temp_cards_data.sort(key=lambda x: x['sort_time']); st.session_state['sports_cards_data'] = temp_cards_data
-        if match_count == 0: st.info("선택하신 날짜에 배정된 축구 경기가 없습니다.")
+        if match_count == 0 and not limit_hit: st.info("선택하신 날짜에 배정된 축구 경기가 없습니다.")
 
 # ==========================================
 # ⚾ 8. 야구(MLB) 메인 로직 
@@ -596,10 +607,8 @@ elif selected_sport == "야구":
                     status_code = game.get('status',{}).get('abstractGameState')
                     is_finished = status_code == 'Final'
                     is_live = status_code == 'Live' and is_past_start_time
-                    
                     h_score = home_team_info.get('score'); a_score = away_team_info.get('score')
                     
-                    # 💡 [핵심] 이기고 있는 팀 스코어 흰색, 지는 팀 회색 처리 (야구)
                     if is_finished or is_live:
                         top_txt = f"MLB ({match_time}) <br><span style='color:#aaa;'>[종료]</span>" if is_finished else f"MLB ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"
                         s_color = "#00E676" if is_finished else "#ff5252"
@@ -635,10 +644,8 @@ elif selected_sport == "야구":
                         h_exp = 3.5 + (seed % 20) / 10.0; a_exp = 3.5 + ((seed * 2) % 20) / 10.0
                         h_s_fip, a_s_fip, h_xwoba, a_xwoba, h_bp_fip, a_bp_fip = 4.50, 4.50, 0.320, 0.320, 4.00, 4.00
                         
-                    # 💡 배당률 산출 (야구)
-                    margin_rate = 0.95
-                    odd_h = f"{margin_rate / (h_prob / 100.0):.2f}"
-                    odd_a = f"{margin_rate / (a_prob / 100.0):.2f}"
+                    odd_h = f"{0.95 / (h_prob / 100.0):.2f}"
+                    odd_a = f"{0.95 / (a_prob / 100.0):.2f}"
                         
                     adv_html = generate_baseball_advanced_stats(home_kr, away_kr, h_exp, a_exp, h_s_fip, a_s_fip, h_xwoba, a_xwoba, h_bp_fip, a_bp_fip)
                     badges_html, ai_comment = get_baseball_prediction_badges(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, h_score, a_score)
@@ -647,7 +654,6 @@ elif selected_sport == "야구":
                     a_vals = [min(99, a_xwoba*250), max(30, 100-(a_s_fip*15)), max(30, 100-(a_bp_fip*15)), 50, min(95, a_exp*15), a_prob]
                     radar_html = create_baseball_radar(h_vals, a_vals, home_kr, away_kr, False)
                     lineup_html = get_baseball_lineup_table(home_kr, away_kr)
-                    
                     v_name = game.get('venue', {}).get('name')
 
                     temp_cards_data.append({
@@ -669,13 +675,12 @@ elif selected_sport in ["농구", "배구"]:
     st.info(f"{selected_sport} 종목은 완벽 검증된 '통합 UI 구조'를 본따 순차 오픈 예정입니다.")
 
 # ==========================================
-# 📺 9. 통합 렌더링 엔진 (💡 UI 패치 완벽 적용)
+# 📺 9. 통합 렌더링 엔진 (💡 동적 높이 배정 완벽 해결)
 # ==========================================
 if st.session_state.get('sports_cards_data'):
     cols = st.columns(3)
     for idx, card in enumerate(st.session_state['sports_cards_data']):
         with cols[idx % 3]:
-            # 하단 확률 게이지 바
             if card['sport'] == "야구":
                 prob_text_html = f"<span>홈 {card['p_h']:.0f}%</span><span>원정 {card['p_a']:.0f}%</span>"
                 prob_bar_html = f"<div class='prob-home' style='width: {card['p_h']}%;'></div><div class='prob-away' style='width: {card['p_a']}%;'></div>"
@@ -683,7 +688,6 @@ if st.session_state.get('sports_cards_data'):
                 prob_text_html = f"<span>홈 {card['p_h']:.0f}%</span><span>무 {card['p_d']:.0f}%</span><span>원정 {card['p_a']:.0f}%</span>"
                 prob_bar_html = f"<div class='prob-home' style='width: {card['p_h']}%;'></div><div class='prob-draw' style='width: {card['p_d']}%;'></div><div class='prob-away' style='width: {card['p_a']}%;'></div>"
             
-            # 💡 [핵심] 팀명 중앙 아래에 깔끔하게 배당률 배치 & 무승부 배당은 스코어 아래에 배치
             odd_d_html = f"<div style='font-size:13px; color:#00E676; font-weight:bold; margin-top:2px; font-family: Courier New, monospace;'>{card['odd_d']}</div>" if card['odd_d'] else ""
             
             html_str = (
