@@ -17,12 +17,11 @@ try:
 except:
     FOOTBALL_API_KEY = ""
 
-# 🚨 API 키가 없으면 아래 따옴표 안에 직접 입력하세요!
 if not FOOTBALL_API_KEY:
     FOOTBALL_API_KEY = "83870361ee49a5abb1fef372d22a2d06"
 
 # ==========================================
-# 2. 🎨 UI CSS
+# 2. 🎨 UI CSS (사진 디자인 완벽 반영)
 # ==========================================
 custom_css = """
 <style>
@@ -44,11 +43,11 @@ custom_css = """
 [data-testid="stSidebar"] div[role="radiogroup"] label p { font-size: 13px !important; font-weight: 700 !important; color: #888 !important; margin: 0 !important; text-align: center !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) p { color: #00E676 !important; }
 
-/* 💡 매치 카드 레이아웃 (높이 강제 고정) */
-.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 15px; display: flex; flex-direction: column; justify-content: space-between; height: 540px; box-sizing: border-box; overflow: hidden; }
+/* 💡 매치 카드 레이아웃 (V84 UI 패치) */
+.card-box { background-color: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 16px rgba(0,0,0,0.6); margin-bottom: 15px; display: flex; flex-direction: column; justify-content: space-between; height: 580px; box-sizing: border-box; overflow: hidden; }
 .card-top { flex-shrink: 0; width: 100%; }
 .card-mid { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin: 10px 0; width: 100%; }
-.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 12px; text-align: center; width: 100%; height: 135px; }
+.card-bot { flex-shrink: 0; border-top: 1px dashed #555; padding-top: 12px; text-align: center; width: 100%; height: 210px; }
 
 .league-txt { color: #ff9800; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
 .match-box { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 15px; }
@@ -67,11 +66,6 @@ custom_css = """
 .prob-draw { background-color: #ff9800; height: 100%; }
 .prob-away { background-color: #EF5350; height: 100%; }
 
-.predict-txt { font-size: 14.5px; font-weight: bold; margin-bottom: 6px; }
-.handi-txt { font-size: 13.5px; font-weight: bold; margin-bottom: 6px; color: #B39DDB; } 
-.over-under { font-size: 13.5px; font-weight: bold; margin-bottom: 8px; color: #FFF59D; } 
-.ai-advice { font-size: 12px; color: #bbb; line-height: 1.4; margin-top: 8px; border-top: 1px dotted #444; padding-top: 8px; font-style: italic; height: 38px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
-
 .table-wrapper { width: 100%; margin-top: 5px; margin-bottom: 5px; overflow-x: hidden; }
 .detail-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; color: #ccc; text-align: center; background-color: #1a1a1a; border-radius: 6px; overflow: hidden; } 
 .detail-table th { background-color: #222; padding: 6px 2px; border-bottom: 1px solid #444; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -79,8 +73,24 @@ custom_css = """
 
 .standings-header { font-size: 16px; font-weight: bold; color: #00E676; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
 
-.badge-hit { color: #111; background-color: #00E676; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px; display: inline-block; }
-.badge-miss { color: #fff; background-color: #EF5350; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px; display: inline-block; }
+/* 💡 [핵심] 사진 UI 알약 배지 스타일 */
+.prediction-badge { display: flex; align-items: center; justify-content: space-between; border-radius: 25px; padding: 10px 15px; margin-bottom: 10px; color: #fff; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
+.badge-left { display: flex; align-items: center; gap: 10px; }
+.badge-right { display: flex; align-items: center; gap: 8px; font-size: 11.5px; }
+.badge-icon { font-size: 16px; }
+
+/* HIT (Blue), MISS (Red), Pending (Grey) */
+.hit-bg { background-color: #0D47A1; }
+.miss-bg { background-color: #B71C1C; }
+.pending-bg { background-color: #333; color: #aaa; }
+
+/* 우측 끝 작은 상태 배지 */
+.status-label { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+.label-hit { background-color: #00E676; color: #111; }
+.label-miss { background-color: #EF5350; color: #fff; }
+.label-pending { background-color: #555; color: #ccc; }
+
+.ai-advice { font-size: 12px; color: #bbb; line-height: 1.4; margin-top: 5px; font-style: italic; height: 38px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; text-align: left; padding-left: 5px;}
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -163,7 +173,39 @@ def create_html_radar(h_prob, home_kr, away_kr, is_custom=False, sport_type="축
     )
 
 # ==========================================
-# 5. 축구 전용 로직
+# 5. [신규] UI 배지 생성 헬퍼 함수
+# ==========================================
+def create_prediction_badge_html(icon, pred_text, type_text, status):
+    """사진 속 디자인을 HTML로 구현"""
+    bg_class = "pending-bg"
+    status_text = "대기"
+    label_class = "label-pending"
+    
+    if status == "HIT":
+        bg_class = "hit-bg" # Blue
+        status_text = "HIT"
+        label_class = "label-hit"
+    elif status == "MISS":
+        bg_class = "miss-bg" # Red
+        status_text = "MISS"
+        label_class = "label-miss"
+
+    html = f"""
+    <div class="prediction-badge {bg_class}">
+        <div class="badge-left">
+            <span class="badge-icon">{icon}</span>
+            <span class="badge-pred-text">{pred_text}</span>
+        </div>
+        <div class="badge-right">
+            <span class="badge-type-text">{type_text}</span>
+            <span class="status-label {label_class}">{status_text}</span>
+        </div>
+    </div>
+    """
+    return html
+
+# ==========================================
+# 6. 축구 전용 로직
 # ==========================================
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_api_football_fixtures(api_key, league_id, season, date_str):
@@ -197,7 +239,7 @@ def generate_soccer_advanced_stats(h_team, a_team, h_prob, is_finished, h_score,
         h_margin = round(h_gf - a_gf, 1); a_margin = round(a_gf - h_gf, 1)
     else:
         h_gf = round(1.2 + (h_prob - 50.0) * 0.04, 2); a_gf = round(1.2 + (a_prob - 50.0) * 0.04, 2)
-        h_margin = round(h_gf - (1.2 - (h_prob - 50.0) * 0.04), 2); a_margin = round(a_gf - (1.2 - (a_prob - 50.0) * 0.04), 2)
+        h_margin = round(h_gf - (1.2 - (h_prob - 50.0) * 0.04), 2); a_margin = round(a_gf - (1.2 - (h_prob - 50.0) * 0.04), 2)
 
     title_text = "⚽ 매치 결과 데이터 (종료)" if is_finished else "⚽ AI 심층 전력 지표"
     margin_text_h = f"<span style='color:#4FC3F7;'>+{h_margin}</span>" if h_margin > 0 else f"<span style='color:#EF5350;'>{h_margin}</span>"
@@ -214,43 +256,80 @@ def generate_soccer_advanced_stats(h_team, a_team, h_prob, is_finished, h_score,
     )
     return html, h_gf, a_gf
 
-def get_soccer_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, h_score, a_score):
+# 💡 [V84 UI 패치] 축구 결과 함수 -> HTML 배지 리스트 반환으로 변경
+def get_soccer_prediction_badges_html(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, h_score, a_score):
     d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0); a_prob = 100.0 - h_prob - d_prob
     
-    if h_prob >= 60.0: pred_win = "home"; win_txt = f"🟢 {home_kr} 완승 유력"; pred_handi = "home"; handi_txt = f"💪 {home_kr} -1.0 마핸 승 기대"
-    elif a_prob >= 60.0: pred_win = "away"; win_txt = f"🔵 {away_kr} 완승 유력"; pred_handi = "away"; handi_txt = f"💪 {away_kr} -1.0 마핸 승 기대"
-    elif h_prob > a_prob: pred_win = "home"; win_txt = f"🟡 1점차 팽팽한 접전 ({home_kr} 우세)"; pred_handi = "away"; handi_txt = f"🛡️ {away_kr} +1.0 플핸 방어"
-    else: pred_win = "away"; win_txt = f"🟡 1점차 팽팽한 접전 ({away_kr} 우세)"; pred_handi = "home"; handi_txt = f"🛡️ {home_kr} +1.0 플핸 방어"
+    # 1. 승리 예측
+    win_status = "PENDING"
+    if h_prob >= 60.0: 
+        win_pred_code = "home"; win_pred_text = f"{home_kr} 승리"
+    elif a_prob >= 60.0: 
+        win_pred_code = "away"; win_pred_text = f"{away_kr} 승리"
+    elif h_prob > a_prob: 
+        win_pred_code = "home"; win_pred_text = f"{home_kr} 우세"
+    else: 
+        win_pred_code = "away"; win_pred_text = f"{away_kr} 우세"
+
+    # 2. 핸디캡 예측 (축구는 기본 1.0)
+    handi_status = "PENDING"
+    if h_prob >= 60.0: 
+        handi_pred_code = "home"; handi_pred_text = f"{home_kr} -1.0 마핸 승"
+    elif a_prob >= 60.0: 
+        handi_pred_code = "away"; handi_pred_text = f"{away_kr} -1.0 마핸 승"
+    elif h_prob > a_prob: 
+        handi_pred_code = "away"; handi_pred_text = f"{away_kr} +1.0 플핸 방어"
+    else: 
+        handi_pred_code = "home"; handi_pred_text = f"{home_kr} +1.0 플핸 방어"
         
+    # 3. 언오바 예측 (축구는 기본 2.5)
+    ou_status = "PENDING"
     exp_total = h_gf + a_gf
-    if exp_total >= 2.5: pred_ou = "over"; ou_txt = "🔥 다득점 양상 (2.5 오버)"
-    else: pred_ou = "under"; ou_txt = "❄️ 저득점 늪 (2.5 언더)"
+    if exp_total >= 2.5: 
+        ou_pred_code = "over"; ou_pred_text = "2.5 오버"
+    else: 
+        ou_pred_code = "under"; ou_pred_text = "2.5 언더"
         
-    win_badge = handi_badge = ou_badge = ""
+    # 결과 계산 (종료 시)
     if is_finished:
         try:
-            h_s = float(h_score) if h_score not in [None, ""] else 0.0; a_s = float(a_score) if a_score not in [None, ""] else 0.0
-            actual_win = "home" if h_s > a_s else ("away" if a_s > h_s else "draw")
-            win_badge = " <span class='badge-hit'>적중</span>" if pred_win == actual_win else " <span class='badge-miss'>미적중</span>"
-            margin = abs(h_s - a_s)
-            if "마핸" in handi_txt: actual_handi = "hit" if margin >= 2 and actual_win == pred_win else "miss"
-            else: actual_handi = "hit" if margin <= 1 else "miss"
-            handi_badge = " <span class='badge-hit'>적중</span>" if actual_handi == "hit" else " <span class='badge-miss'>미적중</span>"
+            h_s = float(h_score) if h_score not in [None, ""] else 0.0
+            a_s = float(a_score) if a_score not in [None, ""] else 0.0
+            margin = h_s - a_s
+            
+            # 승리 HIT/MISS
+            actual_win = "home" if margin > 0 else ("away" if margin < 0 else "draw")
+            win_status = "HIT" if win_pred_code == actual_win else "MISS"
+            
+            # 핸디캡 HIT/MISS (마핸 예측 시 2골차 이상, 플핸 예측 시 1점차 패/무/승)
+            abs_margin = abs(margin)
+            if "마핸" in handi_pred_text:
+                handi_status = "HIT" if abs_margin >= 2 and win_status == "HIT" else "MISS"
+            else:
+                handi_status = "HIT" if abs_margin <= 1 else "MISS"
+            
+            # 언오바 HIT/MISS
             actual_ou = "over" if (h_s + a_s) >= 2.5 else "under"
-            ou_badge = " <span class='badge-hit'>적중</span>" if pred_ou == actual_ou else " <span class='badge-miss'>미적중</span>"
+            ou_status = "HIT" if ou_pred_code == actual_ou else "MISS"
         except: pass
 
-    if pred_win == "home" and pred_ou == "over": comment = f"홈 이점을 등에 업은 {home_kr}의 폭발적인 공격력이 경기를 지배할 것입니다."
-    elif pred_win == "away" and pred_ou == "under": comment = f"{away_kr}이 탄탄한 수비 조직력으로 상대의 공세를 틀어막고 승리를 가져갈 확률이 높습니다."
-    elif pred_win == "draw": comment = "중원에서의 치열한 주도권 싸움이 예상되며, 쉽게 승부가 나지 않는 팽팽한 양상이 전개됩니다."
+    # AI 코멘트 (기존 로직 유지)
+    if win_pred_code == "home" and ou_pred_code == "over": comment = f"홈 이점을 등에 업은 {home_kr}의 폭발적인 공격력이 경기를 지배할 것입니다."
+    elif win_pred_code == "away" and ou_pred_code == "under": comment = f"{away_kr}이 탄탄한 수비 조직력으로 상대의 공세를 틀어막고 승리를 가져갈 확률이 높습니다."
     else: comment = f"전술적 상성이 강하게 부딪히며, 작은 실수 하나가 전체 승부를 가르는 경기가 될 것입니다."
-    return win_txt + win_badge, handi_txt + handi_badge, ou_txt + ou_badge, comment
+
+    # 배지 HTML 생성
+    win_badge = create_prediction_badge_html("🟢", win_pred_text, "승리", win_status)
+    handi_badge = create_prediction_badge_html("🟣", handi_pred_text, "핸디캡", handi_status)
+    ou_badge = create_prediction_badge_html("🟡", ou_pred_text, "언오바", ou_status)
+    
+    return f"{win_badge}{handi_badge}{ou_badge}", comment
 
 def get_soccer_lineup_table(home_kr, away_kr):
     return f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:50%;'>{home_kr} (예상)</th><th style='color:#EF5350; width:50%;'>{away_kr} (예상)</th></tr><tr><td style='color:#888;'>라인업 발표 대기중</td><td style='color:#888;'>라인업 발표 대기중</td></tr></table></div>"
 
 # ==========================================
-# 6. 야구(MLB) 전용 로직 ⚾ (💡 NaN 에러 완벽 차단)
+# 7. 야구(MLB) 전용 로직 ⚾
 # ==========================================
 MLB_PARK_FACTORS = {'Colorado Rockies': 1.12, 'Cincinnati Reds': 1.08, 'Boston Red Sox': 1.07, 'Texas Rangers': 1.05, 'Chicago White Sox': 1.04, 'Atlanta Braves': 1.03, 'Los Angeles Dodgers': 1.03, 'Philadelphia Phillies': 1.02, 'Houston Astros': 1.01, 'Baltimore Orioles': 1.00, 'Toronto Blue Jays': 1.00, 'Minnesota Twins': 1.00, 'Chicago Cubs': 1.00, 'New York Yankees': 1.00, 'Kansas City Royals': 0.99, 'Arizona Diamondbacks': 0.99, 'Milwaukee Brewers': 0.98, 'Los Angeles Angels': 0.98, 'Washington Nationals': 0.98, 'San Francisco Giants': 0.97, 'Miami Marlins': 0.97, 'Pittsburgh Pirates': 0.96, 'Cleveland Guardians': 0.96, 'St. Louis Cardinals': 0.96, 'Detroit Tigers': 0.95, 'Tampa Bay Rays': 0.95, 'New York Mets': 0.95, 'Athletics': 0.94, 'San Diego Padres': 0.94, 'Seattle Mariners': 0.93}
 
@@ -282,7 +361,6 @@ def load_mlb_team_momentum():
     except: return {}
 
 def run_mlb_simulation(h_fip, a_fip, h_avg_ip, a_avg_ip, h_ops, a_ops, h_bp_fip, a_bp_fip, park_factor, num_sims=5000):
-    # 💡 [핵심 버그 수정] 데이터 결측치(NaN) 방어벽 (15경기 무조건 출력)
     if pd.isna(h_ops): h_ops = 0.720
     if pd.isna(a_ops): a_ops = 0.720
     if pd.isna(h_bp_fip): h_bp_fip = 4.00
@@ -319,61 +397,87 @@ def generate_baseball_advanced_stats(h_team, a_team, h_exp, a_exp, h_s_fip, a_s_
         f"<tr><td style='color:#fff;'>{h_ops:.3f}</td><td style='color:#aaa;'>평균 OPS</td><td style='color:#fff;'>{a_ops:.3f}</td></tr></table></div>"
     )
 
-def get_baseball_prediction_and_commentary(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, h_score, a_score):
+# 💡 [V84 UI 패치] 야구 결과 함수 -> HTML 배지 리스트 반환으로 변경
+def get_baseball_prediction_badges_html(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, h_score, a_score):
     a_prob = 100.0 - h_prob
     
-    # 💡 [핵심 버그 수정] 야구 시뮬레이션 특성(승률 50~58% 쏠림)에 맞춰 멘트 송출 기준 하향 및 세분화
-    if h_prob >= 58.0: pred_win = "home"; win_txt = f"🟢 {home_kr} 완승 유력"
-    elif a_prob >= 58.0: pred_win = "away"; win_txt = f"🔵 {away_kr} 완승 유력"
-    elif h_prob >= 53.0: pred_win = "home"; win_txt = f"🟢 {home_kr} 우세 (일반 승)"
-    elif a_prob >= 53.0: pred_win = "away"; win_txt = f"🔵 {away_kr} 우세 (일반 승)"
-    elif h_prob >= 50.0: pred_win = "home"; win_txt = f"🟡 1점차 팽팽한 접전 ({home_kr} 신승)"
-    else: pred_win = "away"; win_txt = f"🟡 1점차 팽팽한 접전 ({away_kr} 신승)"
+    # 1. 승리 예측
+    win_status = "PENDING"
+    if h_prob >= 58.0: 
+        win_pred_code = "home"; win_pred_text = f"{home_kr} 승리"
+    elif a_prob >= 58.0: 
+        win_pred_code = "away"; win_pred_text = f"{away_kr} 승리"
+    elif h_prob >= 53.0: 
+        win_pred_code = "home"; win_pred_text = f"{home_kr} 우세"
+    elif a_prob >= 53.0: 
+        win_pred_code = "away"; win_pred_text = f"{away_kr} 우세"
+    elif h_prob >= 50.0: 
+        win_pred_code = "home"; win_pred_text = f"{home_kr} 신승"
+    else: 
+        win_pred_code = "away"; win_pred_text = f"{away_kr} 신승"
     
-    if h_prob >= 58.0: pred_handi = "home"; handi_txt = f"💪 {home_kr} -1.5 마핸 승 기대"
-    elif a_prob >= 58.0: pred_handi = "away"; handi_txt = f"💪 {away_kr} -1.5 마핸 승 기대"
-    elif pred_win == "home": pred_handi = "away"; handi_txt = f"🛡️ {away_kr} +1.5 플핸 방어 유력"
-    else: pred_handi = "home"; handi_txt = f"🛡️ {home_kr} +1.5 플핸 방어 유력"
+    # 2. 핸디캡 예측 (야구는 기본 1.5)
+    handi_status = "PENDING"
+    if h_prob >= 58.0: 
+        handi_pred_code = "home"; handi_pred_text = f"{home_kr} -1.5 마핸 승"
+    elif a_prob >= 58.0: 
+        handi_pred_code = "away"; handi_pred_text = f"{away_kr} -1.5 마핸 승"
+    elif win_pred_code == "home": 
+        handi_pred_code = "away"; handi_pred_text = f"{away_kr} +1.5 플핸 방어"
+    else: 
+        handi_pred_code = "home"; handi_pred_text = f"{home_kr} +1.5 플핸 방어"
         
-    # 💡 [핵심 버그 수정] 언오버 국민 기준점 8.5로 완벽 고정하여 언/오버 밸런스 회복!
+    # 3. 언오바 예측 (야구 기준점 8.5 고정)
+    ou_status = "PENDING"
     exp_total = h_exp + a_exp
     ou_line = 8.5 
-    if exp_total > ou_line: pred_ou = "over"; ou_txt = f"🔥 다득점 타격전 (8.5 오버 유력)"
-    else: pred_ou = "under"; ou_txt = f"❄️ 짠물 투수전 (8.5 언더 유력)"
+    if exp_total > ou_line: 
+        ou_pred_code = "over"; ou_pred_text = "8.5 오버"
+    else: 
+        ou_pred_code = "under"; ou_pred_text = "8.5 언더"
         
-    win_badge = handi_badge = ou_badge = ""
+    # 결과 계산 (종료 시)
     if is_finished:
         try:
             h_s = float(h_score) if h_score not in [None, ""] else 0.0
             a_s = float(a_score) if a_score not in [None, ""] else 0.0
-            actual_win = "home" if h_s > a_s else "away"
-            win_badge = " <span class='badge-hit'>적중</span>" if pred_win == actual_win else " <span class='badge-miss'>미적중</span>"
+            margin = h_s - a_s
             
-            actual_handi = "home" if (h_s - 1.5) > a_s else "away"
-            if "마핸" in handi_txt: handi_badge = " <span class='badge-hit'>적중</span>" if actual_handi == pred_handi else " <span class='badge-miss'>미적중</span>"
+            actual_win = "home" if margin > 0 else "away"
+            win_status = "HIT" if win_pred_code == actual_win else "MISS"
+            
+            # 야구 핸디캡 1.5 기준 HIT/MISS
+            if "마핸" in handi_pred_text:
+                handi_status = "HIT" if margin >= 2 and win_status == "HIT" else "MISS"
             else:
-                if pred_handi == "home": handi_badge = " <span class='badge-hit'>적중</span>" if (h_s + 1.5) > a_s else " <span class='badge-miss'>미적중</span>"
-                else: handi_badge = " <span class='badge-hit'>적중</span>" if (a_s + 1.5) > h_s else " <span class='badge-miss'>미적중</span>"
+                # 플핸 예측 시 1점차 패배까지 적중
+                if handi_pred_code == "home": # 홈 플핸
+                    handi_status = "HIT" if margin >= -1 else "MISS"
+                else: # 원정 플핸
+                    handi_status = "HIT" if margin <= 1 else "MISS"
             
+            # 언오바 HIT/MISS
             actual_ou = "over" if (h_s + a_s) > ou_line else "under"
-            ou_badge = " <span class='badge-hit'>적중</span>" if pred_ou == actual_ou else " <span class='badge-miss'>미적중</span>"
+            ou_status = "HIT" if ou_pred_code == actual_ou else "MISS"
         except: pass
 
-    if pred_win == "home" and h_exp - a_exp > 1.5: comment = f"{home_kr}의 타선 폭발과 투수진의 안정감으로 무난한 대승이 예상됩니다."
-    elif pred_win == "away" and a_exp - h_exp > 1.5: comment = f"선발 매치업의 우위를 바탕으로 {away_kr}이 경기를 쉽게 풀어갈 것입니다."
-    elif pred_ou == "under": comment = f"양 팀 선발의 구위가 타선을 압도하여, 불펜 싸움에서 1점 차 승부가 갈릴 것입니다."
+    # AI 코멘트 (기존 로직 유지)
+    if win_pred_code == "home" and h_exp - a_exp > 1.5: comment = f"{home_kr}의 타선 폭발과 투수진의 안정감으로 무난한 대승이 예상됩니다."
+    elif win_pred_code == "away" and a_exp - h_exp > 1.5: comment = f"선발 매치업의 우위를 바탕으로 {away_kr}이 경기를 쉽게 풀어갈 것입니다."
+    elif ou_pred_code == "under": comment = f"양 팀 선발의 구위가 타선을 압도하여, 불펜 싸움에서 1점 차 승부가 갈릴 것입니다."
     else: comment = f"투수진의 대량 실점 위기를 타선이 어떻게 극복하느냐가 승패를 결정지을 화력전입니다."
         
-    return win_txt + win_badge, handi_txt + handi_badge, ou_txt + ou_badge, comment
-
-def get_baseball_lineup_table(home_kr, away_kr):
-    return f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:50%;'>{home_kr} (선발투수)</th><th style='color:#EF5350; width:50%;'>{away_kr} (선발투수)</th></tr><tr><td style='color:#888;'>확인중</td><td style='color:#888;'>확인중</td></tr></table></div>"
-
+    # 배지 HTML 생성
+    win_badge = create_prediction_badge_html("🟢", win_pred_text, "승리", win_status)
+    handi_badge = create_prediction_badge_html("🟣", handi_pred_text, "핸디캡", handi_status)
+    ou_badge = create_prediction_badge_html("🟡", ou_pred_text, "언오바", ou_status)
+    
+    return f"{win_badge}{handi_badge}{ou_badge}", comment
 
 # ==========================================
-# 7. 메인 UI 및 앱 흐름 시작
+# 8. 메인 UI 및 앱 흐름 시작
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V80 무결점 최종판)</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #00E676; font-size: 28px; margin-bottom: 30px;'>🏆 종합 스포츠 AI 분석실 (V84 UI 마스터판)</h1>", unsafe_allow_html=True)
 
 sport_options = ["축구", "야구", "농구", "배구"]
 selected_sport = st.sidebar.radio("종목 선택", sport_options, horizontal=True)
@@ -387,7 +491,7 @@ if 'sports_cards_data' not in st.session_state: st.session_state['sports_cards_d
 if 'soccer_standings_tabs' not in st.session_state: st.session_state['soccer_standings_tabs'] = {}
 
 # ==========================================
-# ⚽ 8. 축구 로직 
+# ⚽ 축구 로직
 # ==========================================
 if selected_sport == "축구":
     analyze_button = st.sidebar.button("🚀 축구 데이터 딥-스캔 시작", use_container_width=True)
@@ -395,21 +499,11 @@ if selected_sport == "축구":
     st.sidebar.markdown("### ⚽ 축구 리그 선택")
     
     with st.sidebar.expander("🌏 아시아 및 기타 리그", expanded=True):
-        l_292 = st.checkbox("K리그 1 (KOR)", value=True)
-        l_293 = st.checkbox("K리그 2 (KOR)", value=False)
-        l_98 = st.checkbox("J1 리그 (JPN)", value=False)
-        
+        l_292 = st.checkbox("K리그 1 (KOR)", value=True); l_293 = st.checkbox("K리그 2 (KOR)", value=False); l_98 = st.checkbox("J1 리그 (JPN)", value=False)
     with st.sidebar.expander("🌟 국제 대회 (FIFA/UEFA)", expanded=True):
-        l_1 = st.checkbox("월드컵 (World Cup)", value=True)
-        l_2 = st.checkbox("챔피언스리그 (UCL)", value=False)
-        l_3 = st.checkbox("유로파리그 (UEL)", value=False)
-        l_10 = st.checkbox("A매치 친선전", value=False)
-        
+        l_1 = st.checkbox("월드컵 (World Cup)", value=True); l_2 = st.checkbox("챔피언스리그 (UCL)", value=False); l_3 = st.checkbox("유로파리그 (UEL)", value=False); l_10 = st.checkbox("A매치 친선전", value=False)
     with st.sidebar.expander("🌍 유럽 주요 리그", expanded=True):
-        l_39 = st.checkbox("프리미어리그 (ENG)", value=False)
-        l_140 = st.checkbox("라리가 (ESP)", value=False)
-        l_135 = st.checkbox("세리에 A (ITA)", value=False)
-        l_78 = st.checkbox("분데스리가 (GER)", value=False)
+        l_39 = st.checkbox("프리미어리그 (ENG)", value=False); l_140 = st.checkbox("라리가 (ESP)", value=False); l_135 = st.checkbox("세리에 A (ITA)", value=False); l_78 = st.checkbox("분데스리가 (GER)", value=False)
 
     league_ids = ["292", "293", "98", "1", "2", "3", "10", "39", "140", "135", "78"]
     checkbox_vals = [l_292, l_293, l_98, l_1, l_2, l_3, l_10, l_39, l_140, l_135, l_78]
@@ -418,14 +512,11 @@ if selected_sport == "축구":
     SPRING_TO_AUTUMN_LEAGUES = ["292", "293", "98", "1", "10"]
 
     if analyze_button:
-        if not selected_leagues: 
-            st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요."); st.stop()
-            
+        if not selected_leagues: st.sidebar.warning("최소 1개 이상의 리그를 선택해주세요."); st.stop()
         st.session_state['sports_cards_data'] = []
         st.session_state['soccer_standings_tabs'] = {}
         progress_bar = st.progress(0); status_text = st.empty()
         limit_hit = False; match_count = 0
-        
         temp_cards_data = []
         
         for idx, league_id in enumerate(selected_leagues):
@@ -434,10 +525,9 @@ if selected_sport == "축구":
             progress_bar.progress((idx) / len(selected_leagues))
             
             calc_season = str(selected_date.year) if league_id in SPRING_TO_AUTUMN_LEAGUES else (str(selected_date.year - 1) if selected_date.month < 7 else str(selected_date.year))
-            
             standings_res = fetch_api_football_standings(FOOTBALL_API_KEY, league_id, calc_season)
             standings_dict = {} 
-            if standings_res and isinstance(standings_res, list) and len(standings_res) > 0:
+            if standings_res and standings_res[0].get('league', {}).get('standings'):
                 league_data_list = []
                 groups = standings_res[0].get('league', {}).get('standings', [])
                 for g_idx, group in enumerate(groups):
@@ -445,88 +535,54 @@ if selected_sport == "축구":
                         g_name = group[0].get('group', f'Group {g_idx+1}') if len(groups) > 1 else "통합 순위표"
                         df_data = []
                         for team in group:
-                            t_id = team.get('team', {}).get('id')
-                            rank = team.get('rank')
-                            standings_dict[t_id] = rank 
-                            df_data.append({"순위": rank, "팀명": translate_to_ko(team.get('team', {}).get('name')), "승점": team.get('points'), "승": team.get('all', {}).get('win'), "무": team.get('all', {}).get('draw'), "패": team.get('all', {}).get('lose')})
+                            standings_dict[team['team']['id']] = team['rank']
+                            df_data.append({"순위": team['rank'], "팀명": translate_to_ko(team['team']['name']), "승점": team['points'], "승": team['all']['win'], "무": team['all']['draw'], "패": team['all']['lose']})
                         league_data_list.append({"group_name": g_name, "dataframe": pd.DataFrame(df_data).set_index("순위")})
                     except: pass
                 st.session_state['soccer_standings_tabs'][LEAGUE_MAP[league_id]] = league_data_list
             
             date_str = selected_date.strftime('%Y-%m-%d')
             matches = fetch_api_football_fixtures(FOOTBALL_API_KEY, league_id, calc_season, date_str)
-            
-            if matches == "AUTH_ERROR": st.error("🚨 API 키가 올바르지 않거나 권한이 없습니다."); limit_hit = True; break
-            elif matches == "LIMIT": st.error("🚨 API 무료 호출 한도 초과!"); limit_hit = True; break
-            
+            if matches == "LIMIT": st.error("🚨 API 한도 초과!"); limit_hit = True; break
             if matches and isinstance(matches, list):
                 for match in matches:
-                    game_date = match.get('fixture', {}).get('date', '')
-                    if not game_date: continue
                     try:
-                        utc_time = datetime.strptime(game_date, "%Y-%m-%dT%H:%M:%S%z")
-                    except:
-                        try: utc_time = datetime.strptime(game_date, "%Y-%m-%dT%H:%M:%SZ")
-                        except: continue
+                        utc_time = datetime.strptime(match['fixture']['date'], "%Y-%m-%dT%H:%M:%S%z")
+                        kst_time = utc_time + timedelta(hours=9)
+                        if kst_time.date() != selected_date: continue
 
-                    kst_time = utc_time + timedelta(hours=9)
-                    if kst_time.date() != selected_date: continue
-
-                    home_id = match['teams']['home']['id']; away_id = match['teams']['away']['id']
-                    home_kr = translate_to_ko(match['teams']['home']['name']); away_kr = translate_to_ko(match['teams']['away']['name'])
-                    h_logo = match['teams']['home']['logo']; a_logo = match['teams']['away']['logo']
-                    
-                    raw_timestamp = int(utc_time.timestamp())
-                    match_time = kst_time.strftime("%H:%M")
-                    
-                    status = match['fixture']['status']['short']
-                    is_finished = status in ['FT', 'AET', 'PEN']
-                    
-                    goals_h = match.get('goals', {}).get('home'); goals_a = match.get('goals', {}).get('away')
-                    h_print = int(goals_h) if goals_h is not None else 0; a_print = int(goals_a) if goals_a is not None else 0
-                    
-                    if is_finished: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{h_print}:{a_print}"
-                    elif status in ['1H', 'HT', '2H', 'ET']: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{h_print}:{a_print}"
-                    else: top_txt = f"{LEAGUE_MAP[league_id]} ({match_time})"; s_color="#888"; s_txt="VS"
-
-                    if standings_dict and home_id in standings_dict and away_id in standings_dict:
-                        rank_diff = standings_dict[away_id] - standings_dict[home_id]
-                        h_prob = 40.0 + (rank_diff * 1.5) + 3.0
-                        h_prob = max(20.0, min(80.0, h_prob))
-                    else:
-                        seed = sum(ord(c) for c in home_kr + away_kr)
-                        h_prob = 35.0 + (seed % 30)
+                        home_kr = translate_to_ko(match['teams']['home']['name']); away_kr = translate_to_ko(match['teams']['away']['name'])
+                        raw_timestamp = int(utc_time.timestamp())
+                        match_time = kst_time.strftime("%H:%M")
+                        is_finished = match['fixture']['status']['short'] in ['FT', 'AET', 'PEN']
+                        goals_h = match['goals']['home']; goals_a = match['goals']['away']
                         
-                    d_prob = max(0.0, 20.0 - abs(h_prob - 50.0) / 2.0); a_prob = 100.0 - h_prob - d_prob
-                    
-                    adv_html, h_gf, a_gf = generate_soccer_advanced_stats(home_kr, away_kr, h_prob, is_finished, goals_h, goals_a)
-                    win_txt, handi_txt, ou_txt, ai_comment = get_soccer_prediction_and_commentary(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, goals_h, goals_a)
-                    radar_html = create_html_radar(h_prob, home_kr, away_kr, is_custom=True, sport_type="축구")
-                    lineup_html = get_soccer_lineup_table(home_kr, away_kr)
-                    
-                    v_name = match['fixture'].get('venue', {}).get('name')
-                    
-                    temp_cards_data.append({
-                        'sort_time': raw_timestamp,
-                        'sport': '축구', 'top_text': top_txt, 'home_kr': home_kr, 'away_kr': away_kr, 'h_logo': h_logo, 'a_logo': a_logo, 
-                        's_color': s_color, 's_txt': s_txt, 'p_h': h_prob, 'p_d': d_prob, 'p_a': a_prob, 
-                        'win_txt': win_txt, 'handi_txt': handi_txt, 'ou_txt': ou_txt, 'ai_comment': ai_comment,
-                        'advanced_html': adv_html, 'radar_html': radar_html, 'lineup_html': lineup_html, 'referee': f"🏟️ {v_name}" if v_name else "🏟️ 경기장 미정"
-                    })
-                    match_count += 1
+                        top_txt = f"{LEAGUE_MAP[league_id]} ({match_time}) <br><span style='color:#aaa;'>[종료]</span>" if is_finished else f"{LEAGUE_MAP[league_id]} ({match_time})"
+                        s_color = "#00E676" if is_finished else "#888"; s_txt = f"{int(goals_h)}:{int(goals_a)}" if is_finished else "VS"
 
+                        h_prob = 35.0 + (sum(ord(c) for c in home_kr+away_kr) % 30)
+                        if standings_dict and match['teams']['home']['id'] in standings_dict and match['teams']['away']['id'] in standings_dict:
+                            h_prob = max(20.0, min(80.0, 40.0 + ((standings_dict[match['teams']['away']['id']] - standings_dict[match['teams']['home']['id']]) * 1.5) + 3.0))
+                            
+                        adv_html, h_gf, a_gf = generate_soccer_advanced_stats(home_kr, away_kr, h_prob, is_finished, goals_h, goals_a)
+                        
+                        # 💡 [V84 패치] 배지 HTML 수신
+                        badges_html, ai_comment = get_soccer_prediction_badges_html(home_kr, away_kr, h_prob, h_gf, a_gf, is_finished, goals_h, goals_a)
+                        
+                        temp_cards_data.append({
+                            'sort_time': raw_timestamp, 'sport': '축구', 'top_text': top_txt, 'home_kr': home_kr, 'away_kr': away_kr, 'h_logo': match['teams']['home']['logo'], 'a_logo': match['teams']['away']['logo'], 
+                            's_color': s_color, 's_txt': s_txt, 'p_h': h_prob, 'p_d': max(0.0, 20.0 - abs(h_prob-50.0)/2.0), 'p_a': 100.0 - h_prob - max(0.0, 20.0 - abs(h_prob-50.0)/2.0), 
+                            'badges_html': badges_html, 'ai_comment': ai_comment, 'advanced_html': adv_html, 'radar_html': create_html_radar(h_prob, home_kr, away_kr, True, "축구"), 'lineup_html': get_soccer_lineup_table(home_kr, away_kr), 'referee': f"🏟️ {match['fixture']['venue']['name'] or '미정'}"
+                        })
+                        match_count += 1
+                    except: continue
             time.sleep(0.4)
-            
-        progress_bar.progress(1.0); status_text.text("✅ 축구 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
-        
-        if temp_cards_data:
-            temp_cards_data.sort(key=lambda x: x['sort_time'])
-            st.session_state['sports_cards_data'] = temp_cards_data
-            
-        if match_count == 0 and not limit_hit: st.info("선택하신 날짜에 배정된 축구 경기가 없습니다.")
+        progress_bar.progress(1.0); status_text.text("✅ 축구 스캔 완료!"); time.sleep(0.5); status_text.empty(); progress_bar.empty()
+        if temp_cards_data: temp_cards_data.sort(key=lambda x: x['sort_time']); st.session_state['sports_cards_data'] = temp_cards_data
+        if match_count == 0 and not limit_hit: st.info("배정된 축구 경기가 없습니다.")
 
 # ==========================================
-# ⚾ 8. 야구(MLB) 메인 로직 
+# ⚾ 야구 로직 (💡 V84 UI 패치)
 # ==========================================
 elif selected_sport == "야구":
     analyze_button = st.sidebar.button("🚀 MLB 데이터 딥-스캔 시작", use_container_width=True)
@@ -535,13 +591,10 @@ elif selected_sport == "야구":
     
     if analyze_button:
         st.session_state['sports_cards_data'] = []
-        st.session_state['soccer_standings_tabs'] = {} 
         progress_bar = st.progress(0); status_text = st.empty()
-        
-        status_text.text("🔍 MLB 실시간 선수/팀 스탯 및 오즈 데이터 불러오는 중...")
+        status_text.text("🔍 MLB 스탯 및 오즈 데이터 불러오는 중...")
         df_h, df_p, team_bp_fip = load_mlb_all_data()
-        momentum_dict = load_mlb_team_momentum()
-        progress_bar.progress(0.2)
+        momentum_dict = load_mlb_team_momentum(); progress_bar.progress(0.2)
         
         start_date_str = (selected_date - timedelta(days=2)).strftime('%Y-%m-%d')
         end_date_str = (selected_date + timedelta(days=2)).strftime('%Y-%m-%d')
@@ -553,151 +606,78 @@ elif selected_sport == "야구":
             for date_data in (res.get('dates') or []): all_games.extend(date_data.get('games') or [])
             
             temp_cards_data = []; match_count = 0
-            
             for idx, game in enumerate(all_games):
-                # 💡 안전한 경기 데이터 파싱 (어떤 경우라도 Skip 방지)
-                game_date = game.get('gameDate', '')
-                if not game_date: continue
-                try: utc_time = datetime.strptime(game_date, "%Y-%m-%dT%H:%M:%SZ")
-                except: continue
-                
-                kst_time = utc_time + timedelta(hours=9)
-                if kst_time.date() != selected_date: continue
-                
-                status_text.text(f"🔍 MLB 매치업 분석 중... ({idx+1}/{len(all_games)})")
-                progress_bar.progress(0.2 + (0.8 * (idx / max(len(all_games), 1))))
-                
-                raw_timestamp = int(utc_time.timestamp())
-                match_time = kst_time.strftime("%H:%M")
-                is_past_start_time = datetime.utcnow() >= utc_time
-                
-                away_team_info = game.get('teams',{}).get('away',{}); home_team_info = game.get('teams',{}).get('home',{})
-                away_team = away_team_info.get('team',{}).get('name', 'Unknown')
-                home_team = home_team_info.get('team',{}).get('name', 'Unknown')
-                away_id = away_team_info.get('team',{}).get('id', 0)
-                home_id = home_team_info.get('team',{}).get('id', 0)
-                
-                # 💡 선발투수 에러 방어
-                home_pitcher = home_team_info.get('probablePitcher') or {}
-                away_pitcher = away_team_info.get('probablePitcher') or {}
-                h_p_name = home_pitcher.get('fullName', '미정(TBD)')
-                a_p_name = away_pitcher.get('fullName', '미정(TBD)')
-                
-                home_kr = translate_to_ko(home_team); away_kr = translate_to_ko(away_team)
-                h_logo = f"https://www.mlbstatic.com/team-logos/{home_id}.svg"
-                a_logo = f"https://www.mlbstatic.com/team-logos/{away_id}.svg"
-                
-                status_code = game.get('status',{}).get('abstractGameState')
-                is_finished = status_code == 'Final'
-                h_score = home_team_info.get('score'); a_score = away_team_info.get('score')
-                
-                if is_finished: top_txt = f"MLB ({match_time}) <br><span style='color:#aaa;'>[종료]</span>"; s_color="#00E676"; s_txt=f"{h_score}:{a_score}"
-                elif status_code == 'Live' and is_past_start_time: top_txt = f"MLB ({match_time}) <br><span style='color:#ff5252;'>[진행중]</span>"; s_color="#ff5252"; s_txt=f"{h_score if h_score is not None else 0}:{a_score if a_score is not None else 0}"
-                else: top_txt = f"MLB ({match_time})"; s_color="#888"; s_txt="VS"
-
-                # 💡 [핵심 버그 수정] 데이터 결측치(NaN)로 인한 에러를 막고, 에러 시 자체 가상 시뮬레이터로 우회
                 try:
-                    if not df_p.empty and '이름' in df_p.columns:
+                    utc_time = datetime.strptime(game['gameDate'], "%Y-%m-%dT%H:%M:%SZ")
+                    kst_time = utc_time + timedelta(hours=9)
+                    if kst_time.date() != selected_date: continue
+                    status_text.text(f"🔍 MLB 매치업 분석 중... ({idx+1}/{len(all_games)})"); progress_bar.progress(0.2 + (0.8 * (idx / max(len(all_games), 1))))
+                    
+                    home_info = game['teams']['home']; away_info = game['teams']['away']
+                    home_kr = translate_to_ko(home_info['team']['name']); away_kr = translate_to_ko(away_info['team']['name'])
+                    h_p_name = home_info.get('probablePitcher', {}).get('fullName', '미정(TBD)')
+                    a_p_name = away_info.get('probablePitcher', {}).get('fullName', '미정(TBD)')
+                    
+                    is_finished = game['status']['abstractGameState'] == 'Final'
+                    s_color = "#00E676" if is_finished else "#888"; s_txt = f"{home_info.get('score',0)}:{away_info.get('score',0)}" if is_finished else "VS"
+                    top_txt = f"MLB ({kst_time.strftime('%H:%M')}) <br><span style='color:#aaa;'>[종료]</span>" if is_finished else f"MLB ({kst_time.strftime('%H:%M')})"
+
+                    # 💡 데이터 예외 처리 및 시뮬레이션
+                    try:
                         h_p_data = df_p[df_p['이름'] == h_p_name]; a_p_data = df_p[df_p['이름'] == a_p_name]
-                    else: h_p_data = pd.DataFrame(); a_p_data = pd.DataFrame()
-                    
-                    h_s_fip = float(h_p_data['FIP'].values[0]) if not h_p_data.empty and not pd.isna(h_p_data['FIP'].values[0]) else 4.50
-                    a_s_fip = float(a_p_data['FIP'].values[0]) if not a_p_data.empty and not pd.isna(a_p_data['FIP'].values[0]) else 4.50
-                    h_s_ip = float(h_p_data['평균이닝'].values[0]) if not h_p_data.empty and not pd.isna(h_p_data['평균이닝'].values[0]) else 5.0
-                    a_s_ip = float(a_p_data['평균이닝'].values[0]) if not a_p_data.empty and not pd.isna(a_p_data['평균이닝'].values[0]) else 5.0
-                    
-                    h_bp_fip = team_bp_fip.get(home_team, 4.00) if team_bp_fip else 4.00
-                    a_bp_fip = team_bp_fip.get(away_team, 4.00) if team_bp_fip else 4.00
-                    if pd.isna(h_bp_fip): h_bp_fip = 4.00
-                    if pd.isna(a_bp_fip): a_bp_fip = 4.00
-                    
-                    if not df_h.empty and '팀' in df_h.columns and 'OPS' in df_h.columns:
-                        h_base_ops = df_h[df_h['팀'] == home_team]['OPS'].mean()
-                        a_base_ops = df_h[df_h['팀'] == away_team]['OPS'].mean()
-                    else: h_base_ops, a_base_ops = 0.720, 0.720
+                        h_s_fip = float(h_p_data['FIP'].values[0]) if not h_p_data.empty and not pd.isna(h_p_data['FIP'].values[0]) else 4.50
+                        a_s_fip = float(a_p_data['FIP'].values[0]) if not a_p_data.empty and not pd.isna(a_p_data['FIP'].values[0]) else 4.50
+                        h_base_ops = df_h[df_h['팀'] == home_info['team']['name']]['OPS'].mean() or 0.720
+                        a_base_ops = df_h[df_h['팀'] == away_info['team']['name']]['OPS'].mean() or 0.720
+                        h_f_ops = (h_base_ops * 0.8) + (h_base_ops * (1.0 + (momentum_dict.get(home_info['team']['name'], 0.5) - 0.5) * 0.5) * 0.2)
+                        a_f_ops = (a_base_ops * 0.8) + (a_base_ops * (1.0 + (momentum_dict.get(away_info['team']['name'], 0.5) - 0.5) * 0.5) * 0.2)
+                        pf = MLB_PARK_FACTORS.get(home_info['team']['name'], 1.00)
+                        h_prob, a_prob, h_exp, a_exp = run_mlb_simulation(h_s_fip, a_s_fip, 5.0, 5.0, h_f_ops, a_f_ops, team_bp_fip.get(home_info['team']['name'], 4.00), team_bp_fip.get(away_info['team']['name'], 4.00), pf)
+                    except:
+                        seed = sum(ord(c) for c in home_kr+away_kr); h_prob = 43.0 + (seed%14); a_prob = 100.0 - h_prob; h_exp = 4.0; a_exp = 4.0; h_s_fip=4.5; a_s_fip=4.5; h_f_ops=0.72; a_f_ops=0.72
                         
-                    h_base_ops = float(h_base_ops) if not pd.isna(h_base_ops) else 0.720
-                    a_base_ops = float(a_base_ops) if not pd.isna(a_base_ops) else 0.720
+                    adv_html = generate_baseball_advanced_stats(home_kr, away_kr, h_exp, a_exp, h_s_fip, a_s_fip, h_f_ops, a_f_ops)
                     
-                    h_final_ops = (h_base_ops * 0.8) + (h_base_ops * (1.0 + (momentum_dict.get(home_team, 0.5) - 0.5) * 0.5) * 0.2)
-                    a_final_ops = (a_base_ops * 0.8) + (a_base_ops * (1.0 + (momentum_dict.get(away_team, 0.5) - 0.5) * 0.5) * 0.2)
+                    # 💡 [V84 패치] 배지 HTML 수신
+                    badges_html, ai_comment = get_baseball_prediction_badges_html(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, home_info.get('score'), away_info.get('score'))
                     
-                    pf = MLB_PARK_FACTORS.get(home_team, 1.00)
-                    h_prob, a_prob, h_exp, a_exp = run_mlb_simulation(h_s_fip, a_s_fip, h_s_ip, a_s_ip, h_final_ops, a_final_ops, h_bp_fip, a_bp_fip, pf)
-                except Exception as fallback_e:
-                    # 💡 통계가 완전히 꼬여도 경기가 사라지지 않게 무조건 난수(팀 고유값) 대입!
-                    seed = sum(ord(c) for c in home_kr + away_kr)
-                    h_prob = 43.0 + (seed % 14); a_prob = 100.0 - h_prob
-                    h_exp = 3.5 + (seed % 20) / 10.0; a_exp = 3.5 + ((seed * 2) % 20) / 10.0
-                    h_s_fip, a_s_fip, h_final_ops, a_final_ops = 4.50, 4.50, 0.720, 0.720
+                    lineup_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:50%;'>{home_kr} ({h_p_name})</th><th style='color:#EF5350; width:50%;'>{away_kr} ({a_p_name})</th></tr><tr><td style='color:#888;'>데이터 스캔 대기중</td><td style='color:#888;'>데이터 스캔 대기중</td></tr></table></div>"
                     
-                adv_html = generate_baseball_advanced_stats(home_kr, away_kr, h_exp, a_exp, h_s_fip, a_s_fip, h_final_ops, a_final_ops)
-                win_txt, handi_txt, ou_txt, ai_comment = get_baseball_prediction_and_commentary(home_kr, away_kr, h_prob, h_exp, a_exp, is_finished, h_score, a_score)
-                radar_html = create_html_radar(h_prob, home_kr, away_kr, is_custom=False, sport_type="야구")
-                
-                # 라인업 텍스트에 선발투수 이름 삽입
-                lineup_html = f"<div class='table-wrapper'><table class='detail-table'><tr><th style='color:#4FC3F7; width:50%;'>{home_kr} ({h_p_name})</th><th style='color:#EF5350; width:50%;'>{away_kr} ({a_p_name})</th></tr><tr><td style='color:#888;'>데이터 스캔 대기중</td><td style='color:#888;'>데이터 스캔 대기중</td></tr></table></div>"
-                
-                v_name = game.get('venue', {}).get('name')
-
-                temp_cards_data.append({
-                    'sort_time': raw_timestamp, 'sport': '야구', 'top_text': top_txt, 'home_kr': home_kr, 'away_kr': away_kr, 'h_logo': h_logo, 'a_logo': a_logo, 
-                    's_color': s_color, 's_txt': s_txt, 'p_h': h_prob, 'p_d': 0.0, 'p_a': a_prob, 
-                    'win_txt': win_txt, 'handi_txt': handi_txt, 'ou_txt': ou_txt, 'ai_comment': ai_comment,
-                    'advanced_html': adv_html, 'radar_html': radar_html, 'lineup_html': lineup_html, 'referee': f"🏟️ {v_name}" if v_name else "🏟️ 경기장 미정"
-                })
-                match_count += 1
-        except Exception: pass
-        
-        progress_bar.progress(1.0); status_text.text("✅ MLB 데이터 스캔 완료!"); time.sleep(1); status_text.empty(); progress_bar.empty()
-        
+                    temp_cards_data.append({
+                        'sort_time': int(utc_time.timestamp()), 'sport': '야구', 'top_text': top_txt, 'home_kr': home_kr, 'away_kr': away_kr, 'h_logo': f"https://www.mlbstatic.com/team-logos/{home_info['team']['id']}.svg", 'a_logo': f"https://www.mlbstatic.com/team-logos/{away_info['team']['id']}.svg", 
+                        's_color': s_color, 's_txt': s_txt, 'p_h': h_prob, 'p_d': 0.0, 'p_a': a_prob, 
+                        'badges_html': badges_html, 'ai_comment': ai_comment, 'advanced_html': adv_html, 'radar_html': create_html_radar(h_prob, home_kr, away_kr, False, "야구"), 'lineup_html': lineup_html, 'referee': f"🏟️ {game['venue']['name']}"
+                    })
+                    match_count += 1
+                except: pass
+        except: pass
+        progress_bar.progress(1.0); status_text.text("✅ MLB 스캔 완료!"); time.sleep(0.5); status_text.empty(); progress_bar.empty()
         if temp_cards_data: temp_cards_data.sort(key=lambda x: x['sort_time']); st.session_state['sports_cards_data'] = temp_cards_data
-        if match_count == 0: st.info("선택하신 날짜에 배정된 MLB 경기가 없습니다.")
-
-elif selected_sport in ["농구", "배구"]:
-    st.info(f"{selected_sport} 종목은 완벽 검증된 '통합 UI 구조'를 본따 순차 오픈 예정입니다.")
+        if match_count == 0: st.info("배정된 MLB 경기가 없습니다.")
 
 # ==========================================
-# 📺 9. 통합 렌더링 엔진 
+# 📺 9. 통합 렌더링 엔진 (💡 V84 UI 패치 완벽 반영)
 # ==========================================
 if st.session_state.get('sports_cards_data'):
     cols = st.columns(3)
     for idx, card in enumerate(st.session_state['sports_cards_data']):
         with cols[idx % 3]:
+            # 확률 바 설정
             if card['sport'] == "야구":
-                prob_text_html = f"<span>홈 {card['p_h']:.0f}%</span><span>원정 {card['p_a']:.0f}%</span>"
-                prob_bar_html = f"<div class='prob-home' style='width: {card['p_h']}%;'></div><div class='prob-away' style='width: {card['p_a']}%;'></div>"
+                prob_html = f"<div class='prob-text'><span>홈 {card['p_h']:.0f}%</span><span>원정 {card['p_a']:.0f}%</span></div><div class='prob-container'><div class='prob-home' style='width: {card['p_h']}%;'></div><div class='prob-away' style='width: {card['p_a']}%;'></div></div>"
             else:
-                prob_text_html = f"<span>홈 {card['p_h']:.0f}%</span><span>무 {card['p_d']:.0f}%</span><span>원정 {card['p_a']:.0f}%</span>"
-                prob_bar_html = f"<div class='prob-home' style='width: {card['p_h']}%;'></div><div class='prob-draw' style='width: {card['p_d']}%;'></div><div class='prob-away' style='width: {card['p_a']}%;'></div>"
+                prob_html = f"<div class='prob-text'><span>홈 {card['p_h']:.0f}%</span><span>무 {card['p_d']:.0f}%</span><span>원정 {card['p_a']:.0f}%</span></div><div class='prob-container'><div class='prob-home' style='width: {card['p_h']}%;'></div><div class='prob-draw' style='width: {card['p_d']}%;'></div><div class='prob-away' style='width: {card['p_a']}%;'></div></div>"
             
+            # 💡 [V84 패치] 카드 하단에 사진 UI 배지 HTML 삽입
             html_str = (
                 f"<div class='card-box'>"
                 f"<div class='card-top'><div class='league-txt'>{card['top_text']}</div><div class='match-box'><div class='team-side home-side'><div class='team-name'>{card['home_kr']}</div><img src='{card['h_logo']}' class='team-logo'></div><div class='score-side' style='color:{card['s_color']};'>{card['s_txt']}</div><div class='team-side away-side'><img src='{card['a_logo']}' class='team-logo'><div class='team-name'>{card['away_kr']}</div></div></div><div class='referee-txt'>{card['referee']}</div></div>"
-                f"<div class='card-mid'><div class='prob-wrapper'><div class='prob-text'>{prob_text_html}</div><div class='prob-container'>{prob_bar_html}</div></div>{card['advanced_html']}</div>"
-                f"<div class='card-bot'><div class='predict-txt'>{card['win_txt']}</div><div class='handi-txt'>{card['handi_txt']}</div><div class='over-under'>{card['ou_txt']}</div><div class='ai-advice'>✍️ AI 코멘트: {card['ai_comment']}</div></div>"
+                f"<div class='card-mid'><div class='prob-wrapper'>{prob_html}</div>{card['advanced_html']}</div>"
+                f"<div class='card-bot'>{card['badges_html']}<div class='ai-advice'>✍️ 코멘트: {card['ai_comment']}</div></div>"
                 f"</div>"
             )
             st.markdown(html_str, unsafe_allow_html=True)
-            
             with st.expander("🔍 육각형 지표 & 선발 확인"):
-                if card.get('radar_html'): st.markdown(card['radar_html'], unsafe_allow_html=True)
-                if card.get('lineup_html'): st.markdown(card['lineup_html'], unsafe_allow_html=True)
+                st.markdown(card['radar_html'], unsafe_allow_html=True)
+                st.markdown(card['lineup_html'], unsafe_allow_html=True)
             st.write("")
-
-if selected_sport == "축구" and st.session_state.get('soccer_standings_tabs'):
-    st.markdown("<br><br><hr>", unsafe_allow_html=True)
-    league_tab_names = list(st.session_state['soccer_standings_tabs'].keys())
-    if league_tab_names:
-        league_tabs = st.tabs(league_tab_names)
-        for l_tab, l_name in zip(league_tabs, league_tab_names):
-            with l_tab:
-                st.markdown(f"<div class='standings-header'>📊 {l_name} 실시간 순위 리포트</div>", unsafe_allow_html=True)
-                tables_data = st.session_state['soccer_standings_tabs'][l_name]
-                if len(tables_data) > 1:
-                    sub_tab_names = [table['group_name'] for table in tables_data]
-                    sub_tabs = st.tabs(sub_tab_names)
-                    for s_tab, table in zip(sub_tabs, tables_data):
-                        with s_tab: st.dataframe(table['dataframe'], use_container_width=True)
-                else:
-                    st.dataframe(tables_data[0]['dataframe'], use_container_width=True)
